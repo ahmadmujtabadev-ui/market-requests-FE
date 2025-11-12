@@ -1,0 +1,61 @@
+name: CI/CD Deploy Docker to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build Docker Image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_STAGE=${{ secrets.NEXT_PUBLIC_STAGE }} \
+            -t ai-lease-fe .
+            
+      - name: Save and Compress Docker Image
+        run: |
+          docker save -o ai-lease-fe.tar ai-lease-fe
+          gzip -c ai-lease-fe.tar > ai-lease-fe.tar.gz
+          
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          NEXT_PUBLIC_STAGE: ${{ secrets.NEXT_PUBLIC_STAGE }}
+        run: |
+          echo "$EC2_SSH_KEY" > ssh_key.pem
+          chmod 600 ssh_key.pem
+          echo "Uploading Docker image to EC2..."
+          rsync -e "ssh -i ssh_key.pem -o StrictHostKeyChecking=no" --progress ai-lease-fe.tar.gz $EC2_USER@$EC2_HOST:~/
+          echo "Running deployment on EC2..."
+          ssh -o StrictHostKeyChecking=no -i ssh_key.pem $EC2_USER@$EC2_HOST bash << 'EOF'
+            set -e
+            echo "Uncompressing Docker image..."
+            gunzip -f ~/ai-lease-fe.tar.gz
+            echo "Stopping old container if exists..."
+            docker stop ai-lease-fe || true
+            docker rm ai-lease-fe || true
+            echo "Removing old image if exists..."
+            docker image rm ai-lease-fe || true
+            echo "Loading new Docker image..."
+            docker load -i ~/ai-lease-fe.tar
+            echo "Starting new container..."
+            docker run -d \
+              --name ai-lease-fe \
+              -p 3000:3000 \
+              -e NEXT_PUBLIC_STAGE=${NEXT_PUBLIC_STAGE} \
+              ai-lease-fe
+            echo "Cleaning up Docker system..."
+            docker system prune -af --volumes
+            #rm -f ~/ai-lease-fe.tar
+          EOF
