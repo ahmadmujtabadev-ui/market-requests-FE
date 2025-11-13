@@ -1,16 +1,20 @@
 import { configureStore } from '@reduxjs/toolkit';
 import userReducer from './slices/userSlice';
-import credientialReducer from './slices/credientialSlice';
 import dashbordReducer from './slices/dashboardSlice';
+import templateReducer from './slices/templateSlice'
+import requestReducer from './slices/requestSlice'
+
 
 
 export const store = configureStore({
   reducer: {
     user: userReducer,
-    credential: credientialReducer,
+    template: templateReducer , // Add this
     dashboard : dashbordReducer,
+    request: requestReducer
   },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+

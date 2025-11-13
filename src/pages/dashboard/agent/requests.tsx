@@ -16,86 +16,11 @@ import {
   X
 } from 'lucide-react';
 import { useRouter } from 'next/router';
-
-type RequestStatus = 'new' | 'in_progress' | 'revision' | 'completed';
-
-type Request = {
-  id: string;
-  projectTitle: string;
-  templateId: string;
-  templateTitle: string;
-  templateCategory: string;
-  status: RequestStatus;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  filesCount: number;
-  completedFilesCount?: number;
-};
-
-// Dummy data - replace with actual API call
-const DUMMY_REQUESTS: Request[] = [
-  {
-    id: '1',
-    projectTitle: '123 Main Street Property Brochure',
-    templateId: 't1',
-    templateTitle: 'Property Brochure',
-    templateCategory: 'Property Brochures',
-    status: 'in_progress',
-    notes: 'Please use high-quality images and include virtual tour link',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    filesCount: 8,
-  },
-  {
-    id: '2',
-    projectTitle: 'Just Listed - Ocean View Condo',
-    templateId: 't2',
-    templateTitle: 'Just Listed',
-    templateCategory: 'Just Listed',
-    status: 'new',
-    notes: 'Urgent: Need by tomorrow',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    filesCount: 12,
-  },
-  {
-    id: '3',
-    projectTitle: 'Open House Weekend Flyer',
-    templateId: 't3',
-    templateTitle: 'Open House',
-    templateCategory: 'Open House',
-    status: 'completed',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    filesCount: 5,
-    completedFilesCount: 3,
-  },
-  {
-    id: '4',
-    projectTitle: 'Q1 Market Update Newsletter',
-    templateId: 't4',
-    templateTitle: 'Market Updates',
-    templateCategory: 'Market Updates',
-    status: 'revision',
-    notes: 'Please adjust color scheme to match brand',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-    filesCount: 3,
-  },
-  {
-    id: '5',
-    projectTitle: 'Client Testimonial Graphics',
-    templateId: 't5',
-    templateTitle: 'Testimonials',
-    templateCategory: 'Testimonials',
-    status: 'completed',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
-    filesCount: 4,
-    completedFilesCount: 4,
-  },
-];
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchRequestsAsync } from '@/services/request/asyncThunk';
+import type { AppDispatch } from '@/redux/store';
+import type { Request, RequestStatus } from '@/services/request/endpoint';
+import { selectRequests } from '@/redux/slices/requestSlice';
 
 const STATUS_CONFIG = {
   new: {
@@ -104,7 +29,7 @@ const STATUS_CONFIG = {
     textColor: 'text-black',
     icon: <Clock className="w-4 h-4" />,
   },
-  in_progress: {
+  progress: {
     label: 'In Progress',
     bgColor: 'bg-black',
     textColor: 'text-white',
@@ -149,6 +74,9 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
     return `${Math.floor(seconds / 86400)}d ago`;
   };
 
+  const filesCount = request.files?.length || 0;
+  const completedFilesCount = request.files?.filter(f => f.fileType === 'va_completed').length || 0;
+
   return (
     <div
       onClick={onClick}
@@ -161,15 +89,19 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
             {request.projectTitle}
           </h3>
           <div className="flex items-center gap-2 text-sm">
-            <span className="inline-block px-2 py-1 bg-[#EEEEEE] text-[#595959] rounded text-xs font-roboto" style={{ fontWeight: 500 }}>
-              {request.templateCategory}
-            </span>
-            <span className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-              •
-            </span>
-            <span className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-              {request.templateTitle}
-            </span>
+            {request.template && (
+              <>
+                <span className="inline-block px-2 py-1 bg-[#EEEEEE] text-[#595959] rounded text-xs font-roboto" style={{ fontWeight: 500 }}>
+                  {request.template.category}
+                </span>
+                <span className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+                  •
+                </span>
+                <span className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+                  {request.template.title}
+                </span>
+              </>
+            )}
           </div>
         </div>
         <StatusBadge status={request.status} />
@@ -193,8 +125,14 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
           </div>
           <div className="flex items-center gap-1.5">
             <FileText className="w-4 h-4" />
-            {request.filesCount} files
+            {filesCount} files
           </div>
+          {request.status === 'completed' && completedFilesCount > 0 && (
+            <div className="flex items-center gap-1.5">
+              <CheckCircle className="w-4 h-4 text-black" />
+              {completedFilesCount} completed
+            </div>
+          )}
         </div>
         <button className="text-sm text-black font-manrope opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontWeight: 700 }}>
           View Details →
@@ -207,6 +145,17 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
 function RequestDetailModal({ request, onClose }: { request: Request | null; onClose: () => void }) {
   if (!request) return null;
 
+  const agentFiles = request.files?.filter(f => f.fileType === 'agent_upload') || [];
+  const completedFiles = request.files?.filter(f => f.fileType === 'va_completed') || [];
+
+  const getFileName = (url: string) => {
+    try {
+      return url.split('/').pop() || 'file';
+    } catch {
+      return 'file';
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -217,10 +166,14 @@ function RequestDetailModal({ request, onClose }: { request: Request | null; onC
               {request.projectTitle}
             </h2>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                {request.templateCategory}
-              </span>
-              <span className="text-[#595959]">•</span>
+              {request.template && (
+                <>
+                  <span className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+                    {request.template.category}
+                  </span>
+                  <span className="text-[#595959]">•</span>
+                </>
+              )}
               <span className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
                 Request ID: {request.id}
               </span>
@@ -245,19 +198,67 @@ function RequestDetailModal({ request, onClose }: { request: Request | null; onC
           </div>
 
           {/* Template */}
+          {request.template && (
+            <div>
+              <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
+                Template Used
+              </label>
+              <div className="p-4 bg-[#EEEEEE] rounded-lg">
+                <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
+                  {request.template.title}
+                </p>
+                <p className="text-xs text-[#595959] font-roboto mt-1" style={{ fontWeight: 400 }}>
+                  Category: {request.template.category}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Deadline */}
           <div>
             <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
-              Template Used
+              Deadline
             </label>
             <div className="p-4 bg-[#EEEEEE] rounded-lg">
               <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-                {request.templateTitle}
-              </p>
-              <p className="text-xs text-[#595959] font-roboto mt-1" style={{ fontWeight: 400 }}>
-                Category: {request.templateCategory}
+                {new Date(request.deadline).toLocaleString()}
               </p>
             </div>
           </div>
+
+          {/* Platforms */}
+          {request.platforms && request.platforms.length > 0 && (
+            <div>
+              <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
+                Platforms
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {request.platforms.map((platform, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1.5 bg-[#EEEEEE] text-[#595959] rounded-full text-xs font-roboto"
+                    style={{ fontWeight: 500 }}
+                  >
+                    {platform}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dimensions */}
+          {request.dimensions && (
+            <div>
+              <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
+                Dimensions
+              </label>
+              <div className="p-4 bg-[#EEEEEE] rounded-lg">
+                <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
+                  {request.dimensions}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           {request.notes && (
@@ -273,46 +274,58 @@ function RequestDetailModal({ request, onClose }: { request: Request | null; onC
             </div>
           )}
 
-          {/* Files */}
-          <div>
-            <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
-              Uploaded Files ({request.filesCount})
-            </label>
-            <div className="space-y-2">
-              {[...Array(request.filesCount)].map((_, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-[#EEEEEE] rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-[#595959]" />
-                    <span className="text-sm text-black font-roboto" style={{ fontWeight: 400 }}>
-                      file_{i + 1}.jpg
-                    </span>
-                  </div>
-                  <button className="p-2 hover:bg-white rounded-lg transition-colors">
-                    <Download className="w-4 h-4 text-[#595959]" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Completed Files */}
-          {request.status === 'completed' && request.completedFilesCount && (
+          {/* Agent Uploaded Files */}
+          {agentFiles.length > 0 && (
             <div>
               <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
-                Completed Files ({request.completedFilesCount})
+                Uploaded Files ({agentFiles.length})
               </label>
               <div className="space-y-2">
-                {[...Array(request.completedFilesCount)].map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-black text-white rounded-lg">
+                {agentFiles.map((file) => (
+                  <div key={file.id} className="flex items-center justify-between p-3 bg-[#EEEEEE] rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-[#595959]" />
+                      <span className="text-sm text-black font-roboto" style={{ fontWeight: 400 }}>
+                        {getFileName(file.fileUrl)}
+                      </span>
+                    </div>
+                    <a
+                      href={file.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 hover:bg-white rounded-lg transition-colors"
+                    >
+                      <Download className="w-4 h-4 text-[#595959]" />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Completed Files */}
+          {completedFiles.length > 0 && (
+            <div>
+              <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
+                Completed Files ({completedFiles.length})
+              </label>
+              <div className="space-y-2">
+                {completedFiles.map((file) => (
+                  <div key={file.id} className="flex items-center justify-between p-3 bg-black text-white rounded-lg">
                     <div className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5" />
                       <span className="text-sm font-roboto" style={{ fontWeight: 400 }}>
-                        completed_{i + 1}.pdf
+                        {getFileName(file.fileUrl)}
                       </span>
                     </div>
-                    <button className="p-2 hover:bg-[#595959] rounded-lg transition-colors">
+                    <a
+                      href={file.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 hover:bg-[#595959] rounded-lg transition-colors"
+                    >
                       <Download className="w-4 h-4" />
-                    </button>
+                    </a>
                   </div>
                 ))}
               </div>
@@ -363,36 +376,38 @@ function RequestDetailModal({ request, onClose }: { request: Request | null; onC
 
 export default function MyRequestsPage() {
   const router = useRouter();
-  const [requests, setRequests] = useState<Request[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: requests, isLoading, error } = useSelector(selectRequests);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('all');
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate API call
+  // Fetch requests on mount
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setRequests(DUMMY_REQUESTS);
-      setIsLoading(false);
-    }, 500);
-  }, []);
+    dispatch(fetchRequestsAsync());
+  }, [dispatch]);
 
+  // Filter requests client-side
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
-      const matchesSearch = request.projectTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           request.templateTitle.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = 
+        request.projectTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.template?.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.template?.category.toLowerCase().includes(searchQuery.toLowerCase());
+      
       const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
       
       return matchesSearch && matchesStatus;
     });
   }, [requests, searchQuery, statusFilter]);
 
+  // Calculate status counts
   const statusCounts = useMemo(() => {
     return {
       all: requests.length,
       new: requests.filter(r => r.status === 'new').length,
-      in_progress: requests.filter(r => r.status === 'in_progress').length,
+      progress: requests.filter(r => r.status === 'progress').length,
       revision: requests.filter(r => r.status === 'revision').length,
       completed: requests.filter(r => r.status === 'completed').length,
     };
@@ -434,6 +449,15 @@ export default function MyRequestsPage() {
             </button>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-600 font-roboto" style={{ fontWeight: 400 }}>
+                {error}
+              </p>
+            </div>
+          )}
+
           {/* Filters */}
           <div className="bg-white rounded-lg border border-[#EEEEEE] p-4 mb-6">
             <div className="flex flex-col lg:flex-row gap-4">
@@ -461,7 +485,7 @@ export default function MyRequestsPage() {
                 >
                   <option value="all">All Status ({statusCounts.all})</option>
                   <option value="new">New ({statusCounts.new})</option>
-                  <option value="in_progress">In Progress ({statusCounts.in_progress})</option>
+                  <option value="progress">In Progress ({statusCounts.progress})</option>
                   <option value="revision">Revision ({statusCounts.revision})</option>
                   <option value="completed">Completed ({statusCounts.completed})</option>
                 </select>

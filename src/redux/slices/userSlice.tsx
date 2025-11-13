@@ -116,7 +116,7 @@ export const userSlice = createSlice({
         state.isLoading = false;
         state.profile = action.payload.user;
         state.accessToken = action.payload.access;
-        ls.set("access_token", action.payload.refresh, { encrypt: true });
+        ls.set("access_token", action.payload.access, { encrypt: true });
       })
       .addCase(userSignInAsync.rejected, (state, action) => {
         state.isLoading = false;

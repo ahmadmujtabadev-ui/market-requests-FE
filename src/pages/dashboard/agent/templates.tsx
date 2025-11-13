@@ -2,6 +2,10 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layouts';
 import { Search, FileText, Building2, Eye, ExternalLink, Filter } from 'lucide-react';
 import { useRouter } from 'next/router';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch } from '@/redux/store';
+import { selectTemplates } from '@/redux/slices/templateSlice';
+import { fetchTemplatesAsync } from '@/services/template/asyncThunk';
 
 type TemplateType = 'residential' | 'commercial';
 
@@ -15,50 +19,6 @@ type Template = {
   createdAt: string;
   updatedAt: string;
 };
-
-// Dummy data - replace with actual API call
-const DUMMY_TEMPLATES: Template[] = [
-  {
-    id: '1',
-    title: 'Buyer Guide Template',
-    category: 'Guides',
-    type: 'residential',
-    previewUrl: '/templates/buyer-guide.jpg',
-    canvaUrl: 'https://canva.com/template/1',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    title: 'Property Brochure',
-    category: 'Property Brochures',
-    type: 'residential',
-    previewUrl: '/templates/brochure.jpg',
-    canvaUrl: 'https://canva.com/template/2',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    title: 'For Sale Template',
-    category: 'For Sale',
-    type: 'commercial',
-    previewUrl: '/templates/for-sale.jpg',
-    canvaUrl: 'https://canva.com/template/3',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    title: 'For Lease Template',
-    category: 'For Lease',
-    type: 'commercial',
-    previewUrl: '/templates/for-lease.jpg',
-    canvaUrl: 'https://canva.com/template/4',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
 
 const RESIDENTIAL_CATEGORIES = [
   'All',
@@ -92,20 +52,18 @@ const COMMERCIAL_CATEGORIES = [
 
 export default function TemplateLibraryPage() {
   const router = useRouter();
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: templates, isLoading, error } = useSelector(selectTemplates);
+  console.log("items",templates)
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<TemplateType>('residential');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate API call
+  // Fetch templates on mount and when type changes
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setTemplates(DUMMY_TEMPLATES);
-      setIsLoading(false);
-    }, 500);
-  }, []);
+    dispatch(fetchTemplatesAsync({ type: selectedType }));
+  }, [dispatch, selectedType]);
 
   const categories = selectedType === 'residential' ? RESIDENTIAL_CATEGORIES : COMMERCIAL_CATEGORIES;
 
@@ -124,6 +82,11 @@ export default function TemplateLibraryPage() {
     router.push(`/dashboard/agent/submit?templateId=${templateId}`);
   };
 
+  const handleTypeChange = (type: TemplateType) => {
+    setSelectedType(type);
+    setSelectedCategory('All');
+  };
+
   return (
     <DashboardLayout>
       <style jsx global>{`
@@ -140,16 +103,11 @@ export default function TemplateLibraryPage() {
 
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
         <div className="w-full mx-auto">
-   
-
           {/* Type Toggle */}
           <div className="mb-6">
             <div className="inline-flex rounded-lg bg-white border border-[#EEEEEE] p-1">
               <button
-                onClick={() => {
-                  setSelectedType('residential');
-                  setSelectedCategory('All');
-                }}
+                onClick={() => handleTypeChange('residential')}
                 className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${
                   selectedType === 'residential'
                     ? 'bg-black text-white shadow-sm'
@@ -161,10 +119,7 @@ export default function TemplateLibraryPage() {
                 Residential
               </button>
               <button
-                onClick={() => {
-                  setSelectedType('commercial');
-                  setSelectedCategory('All');
-                }}
+                onClick={() => handleTypeChange('commercial')}
                 className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${
                   selectedType === 'commercial'
                     ? 'bg-black text-white shadow-sm'
@@ -214,6 +169,15 @@ export default function TemplateLibraryPage() {
               </div>
             </div>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-600 font-roboto" style={{ fontWeight: 400 }}>
+                {error}
+              </p>
+            </div>
+          )}
 
           {/* Results Count */}
           <div className="mb-4">

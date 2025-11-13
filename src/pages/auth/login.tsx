@@ -70,7 +70,7 @@ const Login = () => {
     });
     formikActions.setSubmitting(false);
     formikActions.resetForm();
-    router.push('/dashboard/pages/mainpage');
+    router.push('/dashboard/agent/overview');
   };
 
   const handleLoginError = (error: unknown) => {
