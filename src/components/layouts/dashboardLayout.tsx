@@ -215,14 +215,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       >
                         <IconComponent className="w-5 h-5 mr-3" strokeWidth={2} />
                         <div className="flex-1">
-                          {/* <div className="flex items-center justify-between">
-                            <span className="font-manrope" style={{ fontWeight: 800 }}>{item.name}</span>
-                            {item.badge && (
-                              <span className="bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-sm font-manrope" style={{ fontWeight: 800 }}>
-                                {item.badge}
-                              </span>
-                            )}
-                          </div> */}
                           <p className={`text-xs mt-0.5 font-roboto ${item.current ? 'text-white/80' : 'text-[#595959]'}`} style={{ fontWeight: 300 }}>{item.description}</p>
                         </div>
                       </a>
