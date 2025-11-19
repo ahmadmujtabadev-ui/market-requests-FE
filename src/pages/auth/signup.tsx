@@ -67,18 +67,6 @@ const SignUp = () => {
     router.push('/auth/login');
   };
 
-  const handleError = (error: unknown, formikActions: FormikHelpers<SignUpUserData>) => {
-    const msg =
-      (error &&
-        typeof error === 'object' &&
-        'message' in error &&
-        typeof (error as { message: unknown }).message === 'string' &&
-        (error as { message: string }).message) ||
-      'Signup failed. Try again.';
-    console.error(msg);
-    formikActions.setSubmitting(false);
-  };
-
   const submitRegister = async (data: Partial<SignUpUserData>): Promise<RegisterResponse> => {
     return registerUser(data as SignUpUserData);
   };
@@ -87,7 +75,7 @@ const SignUp = () => {
     submitRegister,
     handleSuccess,
     // handleError,
-    { formatData: true, excludeFields: ['conditions'] }
+    // { formatData: true, excludeFields: ['conditions'] }
   );
 
   const base = (authInitialValues.signup ?? {}) as Partial<SignUpUserData>;

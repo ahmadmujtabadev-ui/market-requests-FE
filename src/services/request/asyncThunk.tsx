@@ -12,7 +12,6 @@ export const fetchRequestsAsync = createAsyncThunk(
   "request/fetchRequests",
   async (
     params?: { status?: RequestStatus },
-    { rejectWithValue }
   ) => {
     try {
       const token = `${ls.get("access_token", { decrypt: true })}`;
@@ -20,10 +19,7 @@ export const fetchRequestsAsync = createAsyncThunk(
 
       const response = await requestService.list(params);
 
-      if (!response?.message) {
-        return rejectWithValue(response.message);
-      }
-
+  
       // Handle the 'requests' key from backend
       const data = Array.isArray(response)
         ? response
@@ -31,7 +27,7 @@ export const fetchRequestsAsync = createAsyncThunk(
 
       return data;
     } catch (error: any) {
-      return rejectWithValue(
+      return (
         error?.response?.data?.message || "Failed to fetch requests"
       );
     }

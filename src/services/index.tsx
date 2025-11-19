@@ -230,26 +230,19 @@ export class HttpService {
    * @param options Additional axios options
    * @return Promise
    */
-  protected put = async <T = any>(
-    url: string,
-    body?: object,
-    options: AxiosRequestConfig = {}
-  ): Promise<T> => {
-    try {
-      const cancelToken = this.createCancelToken(`PUT-${url}`);
+  protected put(url: string, data: any, options: any = {}): Promise<any> {
+    return this.axiosInstance.put(url, data, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        // only force JSON if it's NOT FormData
+        ...(data instanceof FormData
+          ? {}
+          : { "Content-Type": "application/json" }),
+      },
+    });
+  }
 
-      const response = await this.axiosInstance.put<T>(url, body, {
-        cancelToken: cancelToken.token,
-        ...options,
-      });
-
-      this.cancelTokenSources.delete(`PUT-${url}`);
-      return response.data;
-    } catch (error: any) {
-      this.cancelTokenSources.delete(`PUT-${url}`);
-      throw error;
-    }
-  };
 
   /**
    * Patch data on server

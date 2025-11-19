@@ -3,15 +3,17 @@ import userReducer from './slices/userSlice';
 import dashbordReducer from './slices/dashboardSlice';
 import templateReducer from './slices/templateSlice'
 import requestReducer from './slices/requestSlice'
-
-
+import userManagementReducer from './slices/userManagementSlice'
+import  adminStatsReducer  from './slices/adminstatsSlice';
 
 export const store = configureStore({
   reducer: {
     user: userReducer,
     template: templateReducer , // Add this
     dashboard : dashbordReducer,
-    request: requestReducer
+    request: requestReducer,
+    admin: userManagementReducer,
+    stats: adminStatsReducer
   },
 });
 

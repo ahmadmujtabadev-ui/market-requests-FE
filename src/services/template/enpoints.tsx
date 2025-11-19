@@ -44,15 +44,29 @@ class TemplateService extends HttpService {
    * Create new template (admin only)
    * POST /api/v1/templates
    */
-  create = (data: Partial<Template>, option = {}): Promise<any> =>
-    this.post(this.prefix, data, option);
+  // create = (data: Partial<Template>, option = {}): Promise<any> =>
+  //   this.post(this.prefix, data, option);
+
+   create = (
+    data: FormData, // or: any
+    option = {}
+  ): Promise<any> => {
+    return this.post(this.prefix, data, option);
+  };
+
 
   /**
-   * Update template (admin only)
+   * Update template (admin only)p
    * PUT /api/v1/templates/:id
    */
-  update = (id: string, data: Partial<Template>, option = {}): Promise<any> =>
-    this.put(`${this.prefix}/${id}`, data, option);
+  update = (
+    id: string,
+    data: FormData, // or: any
+    option = {}
+  ): Promise<any> => {
+    return this.put(`${this.prefix}/${id}`, data, option);
+  };
+
 
   /**
    * Delete template (admin only)

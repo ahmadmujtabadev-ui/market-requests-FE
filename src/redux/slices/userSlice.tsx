@@ -6,6 +6,7 @@ import {
   userSignUpAsync,
   userVerifyOTPAsync,
   socialSignInAsync,
+  fetchUserMeAsync,
   BackendUser,
   LoginResponse,
   RegisterResponse,
@@ -29,6 +30,7 @@ export interface UserState {
   newsAlerts: Record<string, unknown>;
   bills: unknown[];
   reports: unknown[];
+  isAuthenticated: boolean;
 }
 
 const initialState: UserState = {
@@ -45,6 +47,7 @@ const initialState: UserState = {
   newsAlerts: {},
   bills: [],
   reports: [],
+  isAuthenticated: false,
 };
 
 export const userSlice = createSlice({
@@ -53,6 +56,7 @@ export const userSlice = createSlice({
   reducers: {
     setProfile: (state, action: PayloadAction<BackendUser | null>) => {
       state.profile = action.payload;
+      state.isAuthenticated = !!action.payload;
     },
     setReset: (state, action: PayloadAction<boolean>) => {
       state.resetSuccess = action.payload;
@@ -72,6 +76,7 @@ export const userSlice = createSlice({
     userLogout: (state) => {
       state.profile = null;
       state.accessToken = undefined;
+      state.isAuthenticated = false;
       ls.remove("access_token");
       if (typeof window !== "undefined") window.location.href = "/auth/login";
     },
@@ -86,6 +91,27 @@ export const userSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // FETCH USER ME
+    builder
+      .addCase(fetchUserMeAsync.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchUserMeAsync.fulfilled, (state, action: PayloadAction<BackendUser>) => {
+        state.isLoading = false;
+        state.profile = action.payload;
+        state.isAuthenticated = true;
+        Toast.fire({ icon: "success", title: "User data loaded successfully" });
+      })
+      .addCase(fetchUserMeAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.authError = action.payload as string;
+        state.isAuthenticated = false;
+        // Don't show toast for unauthorized - let the app handle redirect
+        if (!action.payload?.includes("401") && !action.payload?.includes("unauthorized")) {
+          Toast.fire({ icon: "error", title: state.authError });
+        }
+      });
+
     // SIGN UP
     builder
       .addCase(userSignUpAsync.pending, (state) => {
@@ -94,12 +120,17 @@ export const userSlice = createSlice({
       .addCase(userSignUpAsync.fulfilled, (state, action: PayloadAction<RegisterResponse>) => {
         state.isLoading = false;
         state.signUpSuccess = true;
-        // optionally store token
+        // Store token
         if (action.payload.access) {
           state.accessToken = action.payload.access;
-          ls.set("access_token", action.payload.refresh, { encrypt: true });
+          ls.set("access_token", action.payload.access, { encrypt: true });
+          if (action.payload.refresh) {
+            ls.set("refresh_token", action.payload.refresh, { encrypt: true });
+          }
         }
         state.profile = action.payload.user;
+        state.isAuthenticated = true;
+        Toast.fire({ icon: "success", title: "Registration successful" });
       })
       .addCase(userSignUpAsync.rejected, (state, action) => {
         state.isLoading = false;
@@ -116,15 +147,21 @@ export const userSlice = createSlice({
         state.isLoading = false;
         state.profile = action.payload.user;
         state.accessToken = action.payload.access;
+        state.isAuthenticated = true;
         ls.set("access_token", action.payload.access, { encrypt: true });
+        if (action.payload.refresh) {
+          ls.set("refresh_token", action.payload.refresh, { encrypt: true });
+        }
+        Toast.fire({ icon: "success", title: "Login successful" });
       })
       .addCase(userSignInAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.authError = action.payload as string;
+        state.isAuthenticated = false;
         Toast.fire({ icon: "error", title: state.authError });
       });
 
-    // SOCIAL
+    // SOCIAL LOGIN
     builder
       .addCase(socialSignInAsync.pending, (state) => {
         state.isLoading = true;
@@ -132,7 +169,8 @@ export const userSlice = createSlice({
       .addCase(socialSignInAsync.fulfilled, (state, action) => {
         state.isLoading = false;
         const token = (action.payload?.accessToken ??
-          action.payload?.access_token) as string | undefined;
+          action.payload?.access_token ??
+          action.payload?.access) as string | undefined;
         if (token) {
           state.accessToken = token;
           ls.set("access_token", token, { encrypt: true });
@@ -140,14 +178,17 @@ export const userSlice = createSlice({
         state.profile = (action.payload?.user ??
           action.payload?.data?.profile ??
           null) as BackendUser | null;
+        state.isAuthenticated = !!state.profile;
+        Toast.fire({ icon: "success", title: "Social login successful" });
       })
       .addCase(socialSignInAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.authError = action.payload as string;
+        state.isAuthenticated = false;
         Toast.fire({ icon: "error", title: state.authError });
       });
 
-    // FORGOT
+    // FORGOT PASSWORD
     builder
       .addCase(userForgetRequestAsync.pending, (state) => {
         state.isLoading = true;
@@ -155,6 +196,7 @@ export const userSlice = createSlice({
       .addCase(userForgetRequestAsync.fulfilled, (state) => {
         state.isLoading = false;
         state.emailSent = true;
+        Toast.fire({ icon: "success", title: "Password reset email sent" });
       })
       .addCase(userForgetRequestAsync.rejected, (state, action) => {
         state.isLoading = false;
@@ -186,6 +228,7 @@ export const userSlice = createSlice({
         state.isLoading = false;
         state.otp = "";
         state.resetSuccess = true;
+        Toast.fire({ icon: "success", title: "Password reset successful" });
       })
       .addCase(userResetPasswordAsync.rejected, (state, action) => {
         state.isLoading = false;
@@ -209,5 +252,7 @@ export const {
 } = userSlice.actions;
 
 export const selectUser = (state: RootState) => state.user;
+export const selectUserProfile = (state: RootState) => state.user.profile;
+export const selectIsAuthenticated = (state: RootState) => state.user.isAuthenticated;
 
 export default userSlice.reducer;

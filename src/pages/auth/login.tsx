@@ -35,6 +35,7 @@ interface UserData {
 interface LoginResponse {
   message: string;
   success: boolean;
+  user: UserData,
   data?: {
     user: UserData;
     token?: string;
@@ -70,7 +71,19 @@ const Login = () => {
     });
     formikActions.setSubmitting(false);
     formikActions.resetForm();
-    router.push('/dashboard/agent/overview');
+    console.log("role", loginResponse)
+    if (loginResponse?.user.role === "agent") {
+      router.push('/dashboard/agent/overview');
+    }
+    if (loginResponse?.user.role === "admin"
+    ) {
+      router.push('/dashboard/admin/stat');
+
+    }
+    if (loginResponse?.user.role === "va") {
+      router.push('/dashboard/vs/stat');
+    }
+
   };
 
   const handleLoginError = (error: unknown) => {

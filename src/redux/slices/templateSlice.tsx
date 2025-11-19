@@ -55,13 +55,13 @@ export const templateSlice = createSlice({
       })
       .addCase(
         fetchTemplatesAsync.fulfilled,
-        (state, action: PayloadAction<Template[]>) => {
+        (state, action) => {
           state.isLoading = false;
-          state.items = action.payload;
-          Toast.fire({ icon: "success", title: "Templates Fetched Succesfull" });
-
+          state.error = "";
+          // CRITICAL: Make sure you're setting items to the templates array
+          state.items = action?.payload?.templates || action?.payload || [];
+          console.log('Templates updated in state:', state.items.length);
         }
-
       )
       .addCase(fetchTemplatesAsync.rejected, (state, action) => {
         state.isLoading = false;
@@ -81,11 +81,12 @@ export const templateSlice = createSlice({
           state.isLoading = false;
           state.selectedTemplate = action.payload;
         }
+
       )
       .addCase(fetchTemplateByIdAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) ?? "Failed to load template";
-        Toast.fire({ icon: "error", title: state.error });
+        Toast.fire({ icon: "success", title: state.error });
       });
 
     // CREATE TEMPLATE
@@ -106,7 +107,7 @@ export const templateSlice = createSlice({
       .addCase(createTemplateAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) ?? "Failed to create template";
-        Toast.fire({ icon: "error", title: state.error });
+        Toast.fire({ icon: "success", title: state.error });
       });
 
     // UPDATE TEMPLATE
@@ -134,10 +135,9 @@ export const templateSlice = createSlice({
       .addCase(updateTemplateAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) ?? "Failed to update template";
-        Toast.fire({ icon: "error", title: state.error });
+        Toast.fire({ icon: "success", title: "Template updated successfully" });
       });
 
-    // DELETE TEMPLATE
     builder
       .addCase(deleteTemplateAsync.pending, (state) => {
         state.isLoading = true;
@@ -153,12 +153,14 @@ export const templateSlice = createSlice({
           if (state.selectedTemplate?.id === action.payload.id) {
             state.selectedTemplate = null;
           }
+          // Show success toast
           Toast.fire({ icon: "success", title: "Template deleted successfully" });
         }
       )
       .addCase(deleteTemplateAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) ?? "Failed to delete template";
+        // Show error toast
         Toast.fire({ icon: "error", title: state.error });
       });
   },

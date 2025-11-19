@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layouts';
 import { 
@@ -8,7 +10,6 @@ import {
   Clock, 
   CheckCircle, 
   AlertCircle,
-  Eye,
   Download,
   MessageSquare,
   ChevronDown,
@@ -431,22 +432,7 @@ export default function MyRequestsPage() {
         <div className="w-full mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl text-black font-manrope mb-2" style={{ fontWeight: 800 }}>
-                My Requests
-              </h1>
-              <p className="text-base text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                Track and manage all your marketing requests
-              </p>
-            </div>
-            <button
-              onClick={() => router.push('/dashboard/agent/submit')}
-              className="inline-flex items-center gap-2 bg-black text-white px-5 py-3 rounded-lg font-manrope hover:bg-[#595959] transition-colors"
-              style={{ fontWeight: 700 }}
-            >
-              <Plus className="w-5 h-5" />
-              New Request
-            </button>
+     
           </div>
 
           {/* Error Message */}

@@ -1,21 +1,33 @@
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { userLogout } from '../../redux/slices/userSlice';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { ProtectedRoute } from '../layouts/protectedRoutes';
 import { LogoutModal } from '../models/logoutModel';
-import { LayoutDashboard, FileText, FolderOpen, Plus, History, User, Bell, HelpCircle, Settings, LogOut } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  FileText, 
+  FolderOpen, 
+  Plus, 
+  Settings, 
+  LogOut,
+  Users,
+  BarChart3,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useAppDispatch } from '@/hooks/hooks';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const { user, isLoading } = useAuth();
 
   const backgroundImage = '/Logo.png';
 
@@ -32,8 +44,35 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     setShowLogoutModal(false);
   };
 
-  // Professional Agent navigation with complete features
-  const navigation = [
+  const userRole = user?.role?.toLowerCase() || 'agent';
+  const userName = user?.businessName || user?.name || 'User';
+  const userEmail = user?.email || 'user@company.com';
+
+  const adminNavigation = [
+    {
+      name: 'Stats',
+      href: '/dashboard/admin/stat',
+      icon: BarChart3,
+      current: router.pathname === '/dashboard/admin/stat',
+      description: 'Analytics & Overview'
+    },
+    {
+      name: 'Template Management',
+      href: '/dashboard/admin/templates/template',
+      icon: FolderOpen,
+      current: router.pathname === '/dashboard/admin/templates/template',
+      description: 'Manage Templates'
+    },
+    {
+      name: 'User Management',
+      href: '/dashboard/admin/userManagement',
+      icon: Users,
+      current: router.pathname === '/dashboard/admin/users',
+      description: 'Manage Users'
+    }
+  ];
+
+  const agentNavigation = [
     {
       name: 'Dashboard',
       href: '/dashboard/agent/overview',
@@ -62,44 +101,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       current: router.pathname === '/dashboard/agent/submit',
       description: 'New Request'
     },
-    {
-      name: 'Request History',
-      href: '/dashboard/agent/history',
-      icon: History,
-      current: router.pathname === '/dashboard/agent/history',
-      description: 'Past Requests'
-    },
-    {
-      name: 'My Profile',
-      href: '/dashboard/agent/profile',
-      icon: User,
-      current: router.pathname === '/dashboard/agent/profile',
-      description: 'Account Settings'
-    },
-    {
-      name: 'Notifications',
-      href: '/dashboard/agent/notifications',
-      icon: Bell,
-      current: router.pathname === '/dashboard/agent/notifications',
-      description: 'Updates & Alerts',
-      badge: 3
-    },
-    {
-      name: 'Help & Support',
-      href: '/dashboard/agent/support',
-      icon: HelpCircle,
-      current: router.pathname === '/dashboard/agent/support',
-      description: 'Get Help'
-    }
   ];
 
+  const navigation = userRole === 'admin' ? adminNavigation : agentNavigation;
+
   const userSetting = [
-    {
-      name: 'Settings',
-      href: '/dashboard/agent/settings',
-      icon: Settings,
-      current: router.pathname === '/dashboard/agent/settings'
-    },
+    // {
+    //   name: 'Settings',
+    //   href: userRole === 'admin' ? '/dashboard/admin/settings' : '/dashboard/agent/settings',
+    //   icon: Settings,
+    //   current: router.pathname === (userRole === 'admin' ? '/dashboard/admin/settings' : '/dashboard/agent/settings')
+    // },
     {
       name: 'Logout',
       href: '#',
@@ -107,6 +119,25 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       current: false
     }
   ];
+
+  const getUserInitials = (name: string) => {
+    const names = name.split(' ');
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  if (isLoading && !user) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#EEEEEE]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-[#595959] font-manrope" style={{ fontWeight: 600 }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ProtectedRoute>
@@ -122,18 +153,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         }
       `}</style>
       <div className="h-screen flex overflow-hidden bg-[#EEEEEE]">
-        {/* Logout Modal */}
         <LogoutModal
           isOpen={showLogoutModal}
           onConfirm={confirmLogout}
           onCancel={cancelLogout}
         />
 
-        {/* Sidebar for desktop */}
         <div className="hidden md:flex md:flex-shrink-0">
           <div className="flex flex-col w-72">
             <div className="flex flex-col h-0 flex-1 bg-white shadow-lg">
-              {/* Logo Section */}
               <div className="flex-1 flex flex-col pt-6 pb-4 overflow-y-auto">
                 <div className="flex items-center flex-shrink-0 px-6 mb-8 border-b border-[#EEEEEE] pb-6">
                   <Image
@@ -145,31 +173,36 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                   />
                 </div>
 
-                {/* User Info Card */}
                 <div className="px-6 mb-6">
                   <div className="bg-[#EEEEEE] rounded-lg p-4 border border-[#595959]/10 shadow-sm">
                     <div className="flex items-center space-x-3">
                       <div className="bg-black rounded-full h-12 w-12 flex items-center justify-center text-white font-manrope" style={{ fontWeight: 800 }}>
-                        AG
+                        {getUserInitials(userName)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-black truncate font-manrope" style={{ fontWeight: 800 }}>
-                          Agent Name
+                          {userName}
                         </p>
                         <p className="text-xs text-[#595959] truncate font-roboto" style={{ fontWeight: 400 }}>
-                          agent@company.com
+                          {userEmail}
                         </p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${
+                          userRole === 'admin' 
+                            ? 'bg-black text-white' 
+                            : 'bg-[#595959] text-white'
+                        }`} style={{ fontWeight: 700 }}>
+                          {userRole === 'admin' ? 'Admin' : 'Agent'}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Navigation */}
                 <nav className="flex-1 px-4 space-y-1">
                   <p className="px-3 text-xs text-[#595959] uppercase tracking-wider mb-3 font-manrope" style={{ fontWeight: 800 }}>
-                    Main Menu
+                    {userRole === 'admin' ? 'Admin Panel' : 'Main Menu'}
                   </p>
-                  {navigation.slice(0, 4).map((item) => {
+                  {navigation.map((item) => {
                     const IconComponent = item.icon;
                     return (
                       <a
@@ -183,24 +216,22 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       >
                         <IconComponent className="w-5 h-5 mr-3" strokeWidth={2} />
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
+                          {/* <div className="flex items-center justify-between">
                             <span className="font-manrope" style={{ fontWeight: 800 }}>{item.name}</span>
                             {item.badge && (
                               <span className="bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-sm font-manrope" style={{ fontWeight: 800 }}>
                                 {item.badge}
                               </span>
                             )}
-                          </div>
+                          </div> */}
                           <p className={`text-xs mt-0.5 font-roboto ${item.current ? 'text-white/80' : 'text-[#595959]'}`} style={{ fontWeight: 300 }}>{item.description}</p>
                         </div>
                       </a>
                     );
                   })}
-
                 </nav>
               </div>
 
-              {/* User Settings - Bottom */}
               <div className="flex-shrink-0 border-t border-[#EEEEEE] p-4">
                 <div className="space-y-1">
                   {userSetting.map((item) => {
@@ -228,7 +259,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           </div>
         </div>
 
-        {/* Mobile sidebar */}
         <div className={`md:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
           <div className="fixed inset-0 flex z-40">
             <div
@@ -246,7 +276,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 </button>
               </div>
 
-              {/* Mobile Logo */}
               <div className="flex-shrink-0 flex items-center px-6 py-6 border-b border-[#EEEEEE]">
                 <Image
                   src={backgroundImage}
@@ -257,26 +286,31 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 />
               </div>
 
-              {/* Mobile User Info */}
               <div className="px-4 py-4">
                 <div className="bg-[#EEEEEE] rounded-lg p-4 border border-[#595959]/10 shadow-sm">
                   <div className="flex items-center space-x-3">
                     <div className="bg-black rounded-full h-11 w-11 flex items-center justify-center text-white font-manrope" style={{ fontWeight: 800 }}>
-                      AG
+                      {getUserInitials(userName)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-black truncate font-manrope" style={{ fontWeight: 800 }}>
-                        Agent Name
+                        {userName}
                       </p>
                       <p className="text-xs text-[#595959] truncate font-roboto" style={{ fontWeight: 400 }}>
-                        agent@company.com
+                        {userEmail}
                       </p>
+                      <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${
+                        userRole === 'admin' 
+                          ? 'bg-black text-white' 
+                          : 'bg-[#595959] text-white'
+                      }`} style={{ fontWeight: 700 }}>
+                        {userRole === 'admin' ? 'Admin' : 'Agent'}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Mobile Navigation */}
               <div className="mt-2 flex-1 h-0 overflow-y-auto">
                 <nav className="px-4 space-y-1">
                   {navigation.map((item) => {
@@ -294,11 +328,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       >
                         <IconComponent className="w-5 h-5 mr-3" strokeWidth={2} />
                         <span className="flex-1 font-manrope" style={{ fontWeight: 800 }}>{item.name}</span>
-                        {item.badge && (
+                        {/* {item.badge && (
                           <span className="bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-sm font-manrope" style={{ fontWeight: 800 }}>
                             {item.badge}
                           </span>
-                        )}
+                        )} */}
                       </a>
                     );
                   })}
@@ -334,9 +368,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           </div>
         </div>
 
-        {/* Main content area */}
         <div className="flex flex-col w-0 flex-1 overflow-hidden">
-          {/* Mobile header */}
           <div className="md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-white border-b border-[#EEEEEE] shadow-sm">
             <button
               className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-black hover:text-[#595959] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-black"
@@ -347,31 +379,33 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             </button>
           </div>
 
-          {/* Page header */}
           <div className="bg-white shadow-sm z-10 border-b border-[#EEEEEE]">
             <div className="px-4 sm:px-6 lg:px-8 py-6">
               <div className="flex items-center justify-between">
-                {/* Left - Page Title */}
                 <div>
                   <h1 className="text-3xl text-black font-manrope" style={{ fontWeight: 800 }}>
-                    {navigation.find(item => item.current)?.name || 'Agent Dashboard'}
+                    {navigation.find(item => item.current)?.name || (userRole === 'admin' ? 'Admin Dashboard' : 'Agent Dashboard')}
                   </h1>
                   <p className="text-sm text-[#595959] mt-1 font-roboto" style={{ fontWeight: 400 }}>
                     {navigation.find(item => item.current)?.description || 'Welcome back'}
                   </p>
                 </div>
                 
-                {/* Right - Quick Actions */}
-                <div className="flex items-center space-x-3">
-                  <button className="bg-black hover:bg-[#595959] text-white px-5 py-2.5 rounded-lg text-sm transition-all duration-200 shadow-sm hover:shadow-md font-manrope" style={{ fontWeight: 800 }}>
-                    + New Request
-                  </button>
-                </div>
+                {userRole === 'agent' && (
+                  <div className="flex items-center space-x-3">
+                    <button 
+                      onClick={() => router.push('/dashboard/agent/submit')}
+                      className="bg-black hover:bg-[#595959] text-white px-5 py-2.5 rounded-lg text-sm transition-all duration-200 shadow-sm hover:shadow-md font-manrope" 
+                      style={{ fontWeight: 800 }}
+                    >
+                      + New Request
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Main content */}
           <main className="flex-1 relative overflow-y-auto focus:outline-none bg-[#EEEEEE]">
             {children}
           </main>

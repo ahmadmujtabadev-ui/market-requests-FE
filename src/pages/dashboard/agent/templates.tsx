@@ -9,17 +9,6 @@ import { fetchTemplatesAsync } from '@/services/template/asyncThunk';
 
 type TemplateType = 'residential' | 'commercial';
 
-type Template = {
-  id: string;
-  title: string;
-  category: string;
-  type: TemplateType;
-  previewUrl?: string;
-  canvaUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
 const RESIDENTIAL_CATEGORIES = [
   'All',
   'Guides',

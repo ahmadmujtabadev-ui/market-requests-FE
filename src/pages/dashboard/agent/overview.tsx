@@ -210,7 +210,7 @@ export default function DashboardOverviewPage() {
               Welcome Back, Agent
             </h1>
             <p className="text-base text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-              Here's an overview of your marketing requests and activity
+              Here is an overview of your marketing requests and activity
             </p>
           </div>
 
