@@ -9,7 +9,6 @@ import {
   FileText, 
   FolderOpen, 
   Plus, 
-  Settings, 
   LogOut,
   Users,
   BarChart3,
