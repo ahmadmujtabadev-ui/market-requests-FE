@@ -260,7 +260,6 @@ export const userSlice = createSlice({
           title: state.authError || "Update failed",
         });
       });
-
   },
 });
 
@@ -278,7 +277,7 @@ export const {
 } = userSlice.actions;
 
 export const selectUser = (state: RootState) => state.user;
-export const selectUserProfile = (state: RootState) => state.user.profile;
-export const selectIsAuthenticated = (state: RootState) => state.user.isAuthenticated;
+// export const selectUserProfile = (state: RootState) => state.user.profile;
+// export const selectIsAuthenticated = (state: RootState) => state.user.isAuthenticated;
 
 export default userSlice.reducer;

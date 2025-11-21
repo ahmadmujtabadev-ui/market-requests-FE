@@ -51,11 +51,9 @@ export const dashboardSlice = createSlice({
         fetchDashboardStatsAsync.fulfilled,
         (state, action: PayloadAction<DashboardStats>) => {
           state.isLoading = false;
-          state.stats = action.payload;
+          state.stats = action.payload;   // 👈 becomes { overview, statusBreakdown, recentRequests }
           state.lastFetched = Date.now();
           state.error = null;
-          // Optional: Show success toast
-          // Toast.fire({ icon: "success", title: "Dashboard updated" });
         }
       )
       .addCase(fetchDashboardStatsAsync.rejected, (state, action) => {

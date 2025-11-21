@@ -2,28 +2,28 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { dashboardService, DashboardStats } from "./endpoint";
 import { HttpService } from "../index";
+// import ls if you need token from localstorage
 
 type Reject = string;
 
 export const fetchDashboardStatsAsync = createAsyncThunk<
   DashboardStats,
-  string | undefined,          // token as arg
+  void,                       // no args, if you read token yourself or no token
   { rejectValue: Reject }
 >(
   "dashboard/fetchStats",
-  async (token, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      if (!token) {
-        return rejectWithValue("Missing access token");
-      }
+      // If you need token like templates:
+      // const token = `${ls.get("access_token", { decrypt: true })}`;
+      // if (!token) return rejectWithValue("Missing access token");
+      // HttpService.setToken(token);
 
-      HttpService.setToken(token);
-
-      // res is DashboardStatsResponse
       const res = await dashboardService.getStats();
+      console.log("dashboard response:", res);
 
-      // ✅ Use the actual type shape. No `.data` here.
-      const stats = res.stats;
+      // ⬅ THIS is the key line
+      const stats = res.stats; // inner object with overview/statusBreakdown/recentRequests
 
       return stats as DashboardStats;
     } catch (e: any) {

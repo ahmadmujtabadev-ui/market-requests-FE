@@ -75,8 +75,8 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
     return `${Math.floor(seconds / 86400)}d ago`;
   };
 
-  const filesCount = request.files?.length || 0;
-  const completedFilesCount = request.files?.filter(f => f.fileType === 'va_completed').length || 0;
+  const filesCount = request?.files?.length || 0;
+  const completedFilesCount = request?.files?.filter(f => f.fileType === 'va_completed').length || 0;
 
   return (
     <div
@@ -87,25 +87,25 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0 mr-4">
           <h3 className="text-lg text-black font-manrope mb-2 truncate group-hover:text-black" style={{ fontWeight: 700 }}>
-            {request.projectTitle}
+            {request?.projectTitle}
           </h3>
           <div className="flex items-center gap-2 text-sm">
-            {request.template && (
+            {request?.template && (
               <>
                 <span className="inline-block px-2 py-1 bg-[#EEEEEE] text-[#595959] rounded text-xs font-roboto" style={{ fontWeight: 500 }}>
-                  {request.template.category}
+                  {request?.template.category}
                 </span>
                 <span className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
                   •
                 </span>
                 <span className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                  {request.template.title}
+                  {request?.template?.title}
                 </span>
               </>
             )}
           </div>
         </div>
-        <StatusBadge status={request.status} />
+        <StatusBadge status={request?.status} />
       </div>
 
       {/* Notes Preview */}
@@ -122,7 +122,7 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
         <div className="flex items-center gap-4 text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
           <div className="flex items-center gap-1.5">
             <Calendar className="w-4 h-4" />
-            {timeAgo(request.createdAt)}
+            {timeAgo(request?.createdAt)}
           </div>
           <div className="flex items-center gap-1.5">
             <FileText className="w-4 h-4" />
@@ -164,19 +164,19 @@ function RequestDetailModal({ request, onClose }: { request: Request | null; onC
         <div className="sticky top-0 bg-white border-b border-[#EEEEEE] p-6 flex items-start justify-between">
           <div className="flex-1 mr-4">
             <h2 className="text-2xl text-black font-manrope mb-2" style={{ fontWeight: 800 }}>
-              {request.projectTitle}
+              {request?.projectTitle}
             </h2>
             <div className="flex items-center gap-2">
-              {request.template && (
+              {request?.template && (
                 <>
                   <span className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                    {request.template.category}
+                    {request?.template?.category}
                   </span>
                   <span className="text-[#595959]">•</span>
                 </>
               )}
               <span className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                Request ID: {request.id}
+                Request ID: {request?.id}
               </span>
             </div>
           </div>
@@ -379,19 +379,16 @@ export default function MyRequestsPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { items: requests, isLoading, error } = useSelector(selectRequests);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('all');
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
 
-  // Fetch requests on mount
   useEffect(() => {
     dispatch(fetchRequestsAsync());
   }, [dispatch]);
 
-  // Filter requests client-side
   const filteredRequests = useMemo(() => {
-    return requests.filter((request) => {
+    return requests?.filter((request) => {
       const matchesSearch = 
         request.projectTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.template?.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -403,14 +400,13 @@ export default function MyRequestsPage() {
     });
   }, [requests, searchQuery, statusFilter]);
 
-  // Calculate status counts
   const statusCounts = useMemo(() => {
     return {
-      all: requests.length,
-      new: requests.filter(r => r.status === 'new').length,
-      progress: requests.filter(r => r.status === 'progress').length,
-      revision: requests.filter(r => r.status === 'revision').length,
-      completed: requests.filter(r => r.status === 'completed').length,
+      all: requests?.length,
+      new: requests?.filter(r => r.status === 'new').length,
+      progress: requests?.filter(r => r.status === 'progress').length,
+      revision: requests?.filter(r => r.status === 'revision').length,
+      completed: requests?.filter(r => r.status === 'completed').length,
     };
   }, [requests]);
 
@@ -469,11 +465,11 @@ export default function MyRequestsPage() {
                   className="w-full pl-10 pr-4 py-2.5 border border-[#EEEEEE] rounded-lg text-sm font-roboto appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-black/10"
                   style={{ fontWeight: 400 }}
                 >
-                  <option value="all">All Status ({statusCounts.all})</option>
-                  <option value="new">New ({statusCounts.new})</option>
-                  <option value="progress">In Progress ({statusCounts.progress})</option>
-                  <option value="revision">Revision ({statusCounts.revision})</option>
-                  <option value="completed">Completed ({statusCounts.completed})</option>
+                  <option value="all">All Status ({statusCounts?.all})</option>
+                  <option value="new">New ({statusCounts?.new})</option>
+                  <option value="progress">In Progress ({statusCounts?.progress})</option>
+                  <option value="revision">Revision ({statusCounts?.revision})</option>
+                  <option value="completed">Completed ({statusCounts?.completed})</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#595959] pointer-events-none" />
               </div>

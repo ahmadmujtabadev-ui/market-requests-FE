@@ -3,8 +3,8 @@ import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
 import { DashboardLayout } from '@/components/layouts';
 import { Plus, FileText, Clock, CheckCircle, AlertCircle, TrendingUp, Package } from 'lucide-react';
-import { 
-  fetchDashboardStatsAsync 
+import {
+  fetchDashboardStatsAsync
 } from '@/services/dashboard/asyncThunk';
 
 import type { AppDispatch } from '@/redux/store';
@@ -90,14 +90,14 @@ function QuickActionCard({ title, description, icon, onClick }: {
   );
 }
 
-function RecentRequestRow({ 
-  title, 
-  status, 
-  date, 
-  template 
-}: { 
-  title: string; 
-  status: RequestStatus; 
+function RecentRequestRow({
+  title,
+  status,
+  date,
+  template
+}: {
+  title: string;
+  status: RequestStatus;
   date: string;
   template: string;
 }) {
@@ -144,19 +144,18 @@ function LoadingSpinner() {
 export default function DashboardOverviewPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   // Redux selectors
   const isLoading = useSelector(selectDashboardLoading);
   const overviewStats = useSelector(selectOverviewStats);
+  // console.log("over", overviewStats)
   const recentRequests = useSelector(selectRecentRequests);
-  const isDataStale = useSelector(selectIsDataStale);
+  // const isDataStale = useSelector(selectIsDataStale);
 
   // Fetch dashboard stats on mount and when data is stale
   useEffect(() => {
-    if (!overviewStats || isDataStale) {
-      dispatch(fetchDashboardStatsAsync());
-    }
-  }, [dispatch, overviewStats, isDataStale]);
+    dispatch(fetchDashboardStatsAsync());
+  }, [dispatch]);
 
   // Build stat cards from Redux data
   const stats: StatCardData[] = overviewStats ? [
@@ -264,13 +263,13 @@ export default function DashboardOverviewPage() {
                   <h2 className="text-xl text-black font-manrope" style={{ fontWeight: 700 }}>
                     Recent Requests
                   </h2>
-                  <button
+                  {/* <button
                     onClick={() => router.push('/dashboard/agent/requests')}
                     className="text-sm font-manrope text-black hover:text-[#595959] transition-colors"
                     style={{ fontWeight: 700 }}
                   >
                     View All →
-                  </button>
+                  </button> */}
                 </div>
                 {recentRequests.length === 0 ? (
                   <div className="text-center py-8 text-[#595959]">

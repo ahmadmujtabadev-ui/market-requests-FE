@@ -84,22 +84,17 @@ export const requestSlice = createSlice({
   },
   extraReducers: (builder) => {
     // FETCH ALL REQUESTS
-    builder
+  builder
       .addCase(fetchRequestsAsync.pending, (state) => {
         state.isLoading = true;
-        state.error = "";
       })
-      .addCase(
-        fetchRequestsAsync.fulfilled,
-        (state, action: PayloadAction<Request[]>) => {
-          state.isLoading = false;
-          state.items = action.payload;
-        }
-      )
+      .addCase(fetchRequestsAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.items = action.payload || [];
+      })
       .addCase(fetchRequestsAsync.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) ?? "Failed to load requests";
-        Toast.fire({ icon: "error", title: state.error });
+        state.error = (action.payload as string) || "Failed to fetch requests";
       });
 
     // FETCH SINGLE REQUEST

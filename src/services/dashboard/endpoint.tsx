@@ -1,7 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// dashboard/endpoint.ts
 import { HttpService } from "../index";
+export interface ApiEnvelope<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+  status?: number;
+}
 
-// Dashboard Stats Response Types
+
 export interface DashboardOverview {
   totalRequests: number;
   pendingRequests: number;
@@ -22,7 +28,7 @@ export interface StatusBreakdown {
 export interface RecentRequest {
   id: string;
   title: string;
-  status: 'new' | 'progress' | 'revision' | 'completed';
+  status: "new" | "progress" | "revision" | "completed";
   date: string;
   template: string;
 }
@@ -33,19 +39,14 @@ export interface DashboardStats {
   recentRequests: RecentRequest[];
 }
 
-export interface DashboardStatsResponse {
-  message: string;
-  stats: DashboardStats;
-}
+// If your backend returns: { success, message, data: { overview, statusBreakdown, recentRequests } }
+export type DashboardStatsResponse = ApiEnvelope<DashboardStats>;
 
 class DashboardService extends HttpService {
   private readonly base = "user";
 
-  /**
-   * GET /api/dashboard/stats
-   * Fetch comprehensive dashboard statistics for the authenticated agent
-   */
-  getStats = () => this.get<DashboardStatsResponse>(`${this.base}/stats`);
+  getStats = () =>
+    this.get<DashboardStatsResponse>(`${this.base}/stats`);
 }
 
 export const dashboardService = new DashboardService();

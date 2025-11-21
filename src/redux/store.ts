@@ -14,6 +14,7 @@ export const store = configureStore({
     request: requestReducer,
     admin: userManagementReducer,
     stats: adminStatsReducer
+    
   },
 });
 
