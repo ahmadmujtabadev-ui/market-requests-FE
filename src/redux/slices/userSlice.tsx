@@ -11,6 +11,8 @@ import {
   LoginResponse,
   RegisterResponse,
   GenericResponse,
+  updateUserMeAsync,
+
 } from "@/services/auth/asyncThunk";
 import ls from "localstorage-slim";
 import Toast from "@/components/Toast";
@@ -235,6 +237,30 @@ export const userSlice = createSlice({
         state.authError = action.payload as string;
         Toast.fire({ icon: "error", title: state.authError });
       });
+   
+    builder
+      .addCase(updateUserMeAsync.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(
+        updateUserMeAsync.fulfilled,
+        (state, action: PayloadAction<BackendUser>) => {
+          state.isLoading = false;
+          state.profile = action.payload; // ✅ no `.data`
+          console.log("251", state.profile);
+          state.isAuthenticated = true;
+          Toast.fire({ icon: "success", title: "Profile updated successfully" });
+        }
+      )
+      .addCase(updateUserMeAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.authError = action.payload as string;
+        Toast.fire({
+          icon: "error",
+          title: state.authError || "Update failed",
+        });
+      });
+
   },
 });
 

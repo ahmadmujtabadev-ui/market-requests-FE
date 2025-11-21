@@ -1,62 +1,39 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// services/dashboard/asyncThunk.ts (Updated with better error handling)
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { dashboardStatusService } from "./endpoint";
-import ls from "localstorage-slim";
-import Toast from "@/components/Toast";
+import { dashboardService, DashboardStats } from "./endpoint";
+import { HttpService } from "../index";
 
-export const getDashboardStatsAsync = createAsyncThunk(
-  "dashboard/stats",
-  async (_, { rejectWithValue }) => {
+type Reject = string;
+
+export const fetchDashboardStatsAsync = createAsyncThunk<
+  DashboardStats,
+  string | undefined,          // token as arg
+  { rejectValue: Reject }
+>(
+  "dashboard/fetchStats",
+  async (token, { rejectWithValue }) => {
     try {
-      const token = ls.get("access_token", { decrypt: true });
-
       if (!token) {
-        return rejectWithValue("Authentication token not found");
+        return rejectWithValue("Missing access token");
       }
 
-      const response = await dashboardStatusService.dashboardStats();
+      HttpService.setToken(token);
 
-      if (response?.success || response?.status === 200) {
-        Toast.fire({ icon: "success", title: response.message as string });
-      }
+      // res is DashboardStatsResponse
+      const res = await dashboardService.getStats();
 
-      if (!response) {
-        return rejectWithValue("No data received from server");
-      }
+      // ✅ Use the actual type shape. No `.data` here.
+      const stats = res.stats;
 
-      if (response.success === false) {
-        return rejectWithValue(response.detail || "Request failed");
-      }
+      return stats as DashboardStats;
+    } catch (e: any) {
+      const errorMessage =
+        e?.response?.data?.error ??
+        e?.response?.data?.message ??
+        e?.message ??
+        "Failed to fetch dashboard stats";
 
-      return response.data || response;
-    } catch (error: any) {
-      console.error("Dashboard stats error:", error);
-
-      if (error.code === 'NETWORK_ERROR') {
-        return rejectWithValue("Network error. Please check your connection.");
-      }
-
-      if (error.status === 401) {
-        return rejectWithValue("Session expired. Please log in again.");
-      }
-
-      if (error.status === 403) {
-        return rejectWithValue("You don't have permission to access this resource.");
-      }
-
-      if (error.status === 404) {
-        return rejectWithValue("Dashboard statistics not found.");
-      }
-
-      if (error.status >= 500) {
-        return rejectWithValue("Server error. Please try again later.");
-      }
-
-      return rejectWithValue(
-        error.message || "Failed to fetch dashboard statistics"
-      );
+      return rejectWithValue(errorMessage);
     }
   }
 );
-

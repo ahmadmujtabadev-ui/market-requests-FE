@@ -1,9 +1,16 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useDispatch, useSelector } from 'react-redux';
 import { DashboardLayout } from '@/components/layouts';
 import { Plus, FileText, Clock, CheckCircle, AlertCircle, TrendingUp, Package } from 'lucide-react';
+import { 
+  fetchDashboardStatsAsync 
+} from '@/services/dashboard/asyncThunk';
 
-type RequestStatus = 'new' | 'in_progress' | 'revision' | 'completed';
+import type { AppDispatch } from '@/redux/store';
+import { selectDashboardLoading, selectIsDataStale, selectOverviewStats, selectRecentRequests } from '@/redux/slices/dashboardSlice';
+
+type RequestStatus = 'new' | 'progress' | 'revision' | 'completed';
 
 type StatCardData = {
   title: string;
@@ -15,16 +22,6 @@ type StatCardData = {
   };
   icon: React.ReactNode;
   iconBg: string;
-};
-
-// Dummy data - replace with actual Redux state
-const DUMMY_STATS = {
-  totalRequests: 24,
-  pendingRequests: 8,
-  inProgressRequests: 5,
-  completedRequests: 11,
-  thisWeekRequests: 6,
-  weekTrend: 12,
 };
 
 function StatCard({ title, value, subtitle, trend, icon, iconBg }: StatCardData) {
@@ -106,7 +103,7 @@ function RecentRequestRow({
 }) {
   const statusConfig = {
     new: { label: 'New', bg: 'bg-[#EEEEEE]', text: 'text-black', icon: <Clock className="w-3 h-3" /> },
-    in_progress: { label: 'In Progress', bg: 'bg-black', text: 'text-white', icon: <FileText className="w-3 h-3" /> },
+    progress: { label: 'In Progress', bg: 'bg-black', text: 'text-white', icon: <FileText className="w-3 h-3" /> },
     revision: { label: 'Revision', bg: 'bg-[#595959]', text: 'text-white', icon: <AlertCircle className="w-3 h-3" /> },
     completed: { label: 'Completed', bg: 'bg-black', text: 'text-white', icon: <CheckCircle className="w-3 h-3" /> },
   };
@@ -136,57 +133,66 @@ function RecentRequestRow({
   );
 }
 
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+    </div>
+  );
+}
+
 export default function DashboardOverviewPage() {
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  
+  // Redux selectors
+  const isLoading = useSelector(selectDashboardLoading);
+  const overviewStats = useSelector(selectOverviewStats);
+  const recentRequests = useSelector(selectRecentRequests);
+  const isDataStale = useSelector(selectIsDataStale);
 
-  // TODO: Replace with actual Redux dispatch and state
+  // Fetch dashboard stats on mount and when data is stale
   useEffect(() => {
-    // dispatch(fetchDashboardStatsAsync());
-  }, []);
+    if (!overviewStats || isDataStale) {
+      dispatch(fetchDashboardStatsAsync());
+    }
+  }, [dispatch, overviewStats, isDataStale]);
 
-  const stats: StatCardData[] = [
+  // Build stat cards from Redux data
+  const stats: StatCardData[] = overviewStats ? [
     {
       title: 'Total Requests',
-      value: DUMMY_STATS.totalRequests,
+      value: overviewStats.totalRequests,
       subtitle: 'All time',
       icon: <FileText className="w-6 h-6 text-black" />,
       iconBg: 'bg-[#EEEEEE]',
     },
     {
       title: 'Pending',
-      value: DUMMY_STATS.pendingRequests,
+      value: overviewStats.pendingRequests,
       subtitle: 'Awaiting review',
       icon: <Clock className="w-6 h-6 text-[#595959]" />,
       iconBg: 'bg-[#EEEEEE]',
     },
     {
       title: 'In Progress',
-      value: DUMMY_STATS.inProgressRequests,
+      value: overviewStats.inProgressRequests,
       subtitle: 'Being worked on',
       icon: <Package className="w-6 h-6 text-black" />,
       iconBg: 'bg-[#EEEEEE]',
     },
     {
       title: 'Completed',
-      value: DUMMY_STATS.completedRequests,
+      value: overviewStats.completedRequests,
       subtitle: 'This month',
       trend: {
-        value: DUMMY_STATS.weekTrend,
+        value: overviewStats.monthTrend,
         label: 'vs last month',
       },
       icon: <CheckCircle className="w-6 h-6 text-black" />,
       iconBg: 'bg-[#EEEEEE]',
     },
-  ];
-
-  // Dummy recent requests
-  const recentRequests = [
-    { id: '1', title: '123 Main Street Brochure', status: 'in_progress' as RequestStatus, date: '2 hours ago', template: 'Property Brochure' },
-    { id: '2', title: 'Just Listed - Ocean View', status: 'new' as RequestStatus, date: '5 hours ago', template: 'Just Listed' },
-    { id: '3', title: 'Open House Flyer', status: 'completed' as RequestStatus, date: '1 day ago', template: 'Open House' },
-    { id: '4', title: 'Market Update Q1', status: 'revision' as RequestStatus, date: '2 days ago', template: 'Market Updates' },
-    { id: '5', title: 'Testimonial Graphics', status: 'completed' as RequestStatus, date: '3 days ago', template: 'Testimonials' },
-  ];
+  ] : [];
 
   return (
     <DashboardLayout>
@@ -215,59 +221,71 @@ export default function DashboardOverviewPage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <StatCard key={index} {...stat} />
-            ))}
-          </div>
+          {isLoading && !overviewStats ? (
+            <LoadingSpinner />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {stats.map((stat, index) => (
+                  <StatCard key={index} {...stat} />
+                ))}
+              </div>
 
-          {/* Quick Actions */}
-          <div className="mb-8">
-            <h2 className="text-xl text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-              Quick Actions
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <QuickActionCard
-                title="Submit New Request"
-                description="Create a new marketing request"
-                icon={<Plus className="w-6 h-6" />}
-                onClick={() => router.push('/dashboard/agent/submit')}
-              />
-              <QuickActionCard
-                title="Browse Templates"
-                description="Explore our template library"
-                icon={<FileText className="w-6 h-6" />}
-                onClick={() => router.push('/dashboard/agent/templates')}
-              />
-              <QuickActionCard
-                title="View All Requests"
-                description="See your complete request history"
-                icon={<Package className="w-6 h-6" />}
-                onClick={() => router.push('/dashboard/agent/requests')}
-              />
-            </div>
-          </div>
+              {/* Quick Actions */}
+              <div className="mb-8">
+                <h2 className="text-xl text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
+                  Quick Actions
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <QuickActionCard
+                    title="Submit New Request"
+                    description="Create a new marketing request"
+                    icon={<Plus className="w-6 h-6" />}
+                    onClick={() => router.push('/dashboard/agent/submit')}
+                  />
+                  <QuickActionCard
+                    title="Browse Templates"
+                    description="Explore our template library"
+                    icon={<FileText className="w-6 h-6" />}
+                    onClick={() => router.push('/dashboard/agent/templates')}
+                  />
+                  <QuickActionCard
+                    title="View All Requests"
+                    description="See your complete request history"
+                    icon={<Package className="w-6 h-6" />}
+                    onClick={() => router.push('/dashboard/agent/requests')}
+                  />
+                </div>
+              </div>
 
-          {/* Recent Requests */}
-          <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl text-black font-manrope" style={{ fontWeight: 700 }}>
-                Recent Requests
-              </h2>
-              <button
-                onClick={() => router.push('/dashboard/agent/requests')}
-                className="text-sm font-manrope text-black hover:text-[#595959] transition-colors"
-                style={{ fontWeight: 700 }}
-              >
-                View All →
-              </button>
-            </div>
-            <div className="space-y-2">
-              {recentRequests.map((request) => (
-                <RecentRequestRow key={request.id} {...request} />
-              ))}
-            </div>
-          </div>
+              {/* Recent Requests */}
+              <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl text-black font-manrope" style={{ fontWeight: 700 }}>
+                    Recent Requests
+                  </h2>
+                  <button
+                    onClick={() => router.push('/dashboard/agent/requests')}
+                    className="text-sm font-manrope text-black hover:text-[#595959] transition-colors"
+                    style={{ fontWeight: 700 }}
+                  >
+                    View All →
+                  </button>
+                </div>
+                {recentRequests.length === 0 ? (
+                  <div className="text-center py-8 text-[#595959]">
+                    <p className="font-roboto">No requests yet. Start by creating your first request!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recentRequests.map((request) => (
+                      <RecentRequestRow key={request.id} {...request} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </DashboardLayout>

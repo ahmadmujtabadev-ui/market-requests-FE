@@ -1,102 +1,104 @@
-// store/slices/dashboardSlice.ts
-import { createSlice } from "@reduxjs/toolkit";
-import { getDashboardStatsAsync } from "@/services/dashboard/asyncThunk";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-type LastSyncStatus = "success" | "warning" | "error" | "idle";
+import Toast from "@/components/Toast";
+import type { RootState } from "@/redux/store";
+import { fetchDashboardStatsAsync } from "@/services/dashboard/asyncThunk";
+import { DashboardOverview, DashboardStats, RecentRequest, StatusBreakdown } from "@/services/dashboard/endpoint";
 
-interface DashboardState {
+export interface DashboardState {
   isLoading: boolean;
   error: string | null;
-
-  // Quick stats (match the Dashboard component)
-  connectionsActive: number;
-  connectionsTotal: number;
-  connectionsTrendPct: number;
-
-  credentialsValid: number;
-  credentialsTotal: number;
-
-  lastSyncAt: string | null;
-  lastSyncStatus: LastSyncStatus;
-
-  issuesCount: number;
-
-  // optional: timestamp
-  lastUpdated: string | null;
+  stats: DashboardStats | null;
+  lastFetched: number | null;
 }
 
 const initialState: DashboardState = {
   isLoading: false,
   error: null,
-
-  connectionsActive: 0,
-  connectionsTotal: 0,
-  connectionsTrendPct: 0,
-
-  credentialsValid: 0,
-  credentialsTotal: 0,
-
-  lastSyncAt: null,
-  lastSyncStatus: "idle",
-
-  issuesCount: 0,
-
-  lastUpdated: null,
+  stats: null,
+  lastFetched: null,
 };
 
-const dashboardSlice = createSlice({
+export const dashboardSlice = createSlice({
   name: "dashboard",
   initialState,
-  reducers: {},
+  reducers: {
+    // Clear dashboard data (useful for logout)
+    clearDashboard: (state) => {
+      state.stats = null;
+      state.error = null;
+      state.lastFetched = null;
+    },
+
+    // Set loading manually if needed
+    setDashboardLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload;
+    },
+
+    // Clear error
+    clearDashboardError: (state) => {
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
+    // FETCH DASHBOARD STATS
     builder
-      .addCase(getDashboardStatsAsync.pending, (state) => {
+      .addCase(fetchDashboardStatsAsync.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(getDashboardStatsAsync.fulfilled, (state, action) => {
+      .addCase(
+        fetchDashboardStatsAsync.fulfilled,
+        (state, action: PayloadAction<DashboardStats>) => {
+          state.isLoading = false;
+          state.stats = action.payload;
+          state.lastFetched = Date.now();
+          state.error = null;
+          // Optional: Show success toast
+          // Toast.fire({ icon: "success", title: "Dashboard updated" });
+        }
+      )
+      .addCase(fetchDashboardStatsAsync.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = null;
-        state.lastUpdated = new Date().toISOString();
-
-        const d = action.payload ?? {};
-
-        // ---- Mapping from /connections/stats response → UI fields ----
-        // Expected shape (example):
-        // {
-        //   connections: { total, active, verifying, failed, paused, byExchange: [...] },
-        //   credentials: { total, valid, revoked, byExchange: [...] },
-        //   lastSync: { at, status },                 // optional
-        //   issues: { count },                        // optional
-        //   trend: { connectionsPct }                 // optional
-        // }
-
-        const connections = d.connections ?? d?.data?.connections ?? {};
-        const credentials = d.credentials ?? d?.data?.credentials ?? {};
-        const lastSync = d.lastSync ?? d?.data?.lastSync ?? {};
-        const issues = d.issues ?? d?.data?.issues ?? {};
-        const trend = d.trend ?? d?.data?.trend ?? {};
-
-        state.connectionsActive = Number(connections.active ?? 0);
-        state.connectionsTotal = Number(connections.total ?? 0);
-        state.connectionsTrendPct = Number(trend.connectionsPct ?? 0);
-
-        state.credentialsValid = Number(credentials.valid ?? 0);
-        state.credentialsTotal = Number(credentials.total ?? 0);
-
-        state.lastSyncAt = lastSync.at ?? null;
-        state.lastSyncStatus = (lastSync.status as LastSyncStatus) ?? "idle";
-
-        state.issuesCount = Number(issues.count ?? 0);
-      })
-      .addCase(getDashboardStatsAsync.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error =
-          (action.payload as string) ||
-          action.error.message ||
-          "Failed to load dashboard stats";
+        state.error = action.payload as string;
+        Toast.fire({
+          icon: "error",
+          title: action.payload || "Failed to load dashboard stats",
+        });
       });
   },
 });
+
+// Actions
+export const {
+  clearDashboard,
+  setDashboardLoading,
+  clearDashboardError,
+} = dashboardSlice.actions;
+
+// Selectors
+export const selectDashboard = (state: RootState) => state.dashboard;
+export const selectDashboardStats = (state: RootState) => state.dashboard.stats;
+export const selectDashboardLoading = (state: RootState) => state.dashboard.isLoading;
+export const selectDashboardError = (state: RootState) => state.dashboard.error;
+
+// Computed selectors for easy access
+export const selectOverviewStats = (state: RootState): DashboardOverview | null =>
+  state.dashboard.stats?.overview ?? null;
+
+export const selectStatusBreakdown = (state: RootState): StatusBreakdown | null =>
+  state.dashboard.stats?.statusBreakdown ?? null;
+
+export const selectRecentRequests = (state: RootState): RecentRequest[] =>
+  state.dashboard.stats?.recentRequests ?? [];
+
+// Check if data is stale (older than 5 minutes)
+export const selectIsDataStale = (state: RootState): boolean => {
+  const { lastFetched } = state.dashboard;
+  if (!lastFetched) return true;
+
+  const fiveMinutes = 5 * 60 * 1000;
+  return Date.now() - lastFetched > fiveMinutes;
+};
 
 export default dashboardSlice.reducer;

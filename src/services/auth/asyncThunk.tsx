@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { authBaseService, LoginDto, RegisterDto, ForgotPasswordDto } from "./endpoints";
+import { authBaseService, LoginDto, RegisterDto, ForgotPasswordDto, UpdateUserDto } from "./endpoints";
 
 export type BackendRole = "user" | "tenant" | "landlord" | "admin" | "agent";
 
@@ -16,7 +16,16 @@ export interface BackendUser {
   lastLoginAt?: string;
   phone?: string;
   country?: string;
+
+  // profile fields from Prisma
+  position?: string;
+  phoneNumber?: string;
+  website?: string;
+  about?: string;
+  profileImage?: string | null;
+  socialLinks?: any; // you can refine to `string[] | { url: string }[]`
 }
+  
 
 export interface LoginResponse {
   user: BackendUser;
@@ -132,3 +141,56 @@ export const userResetPasswordAsync = createAsyncThunk<GenericResponse, any, { r
     }
   }
 );
+
+export interface UpdateUserMeResponse {
+  data: {
+    user: BackendUser;
+  };
+}
+
+export const updateUserMeAsync = createAsyncThunk<
+  BackendUser,        // ✅ payload type
+  UpdateUserDto,
+  { rejectValue: Reject }
+>(
+  "auth/update-me",
+  async (data, { rejectWithValue }) => {
+    try {
+      const res: any = await authBaseService.updateMe(data);
+      console.log("12", res);
+
+      // Adjust based on what your service returns:
+      // If `res` is AxiosResponse, user is probably at res.data.user
+      const user =
+        res?.data?.user ?? // axios-style
+        res?.user ??       // plain object with user
+        res;               // already the user
+
+      return user as BackendUser;
+    } catch (e: any) {
+      return rejectWithValue(
+        e?.response?.data?.message ?? e?.message ?? "Update failed"
+      );
+    }
+  }
+);
+
+
+export const deleteUserMeAsync = createAsyncThunk<
+  GenericResponse,
+  void,
+  { rejectValue: Reject }
+>(
+  "auth/delete-me",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res: any = await authBaseService.deleteMe();
+      return (res as GenericResponse);
+    } catch (e: any) {
+      return rejectWithValue(
+        e?.response?.data?.message ?? e?.message ?? "Delete failed"
+      );
+    }
+  }
+);
+

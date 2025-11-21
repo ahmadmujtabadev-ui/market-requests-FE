@@ -9,12 +9,12 @@ export const useAuth = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { profile, isLoading, isAuthenticated } = useAppSelector(selectUser);
+  console.log("profile in use auth", profile)
 
   useEffect(() => {
     const initializeAuth = async () => {
       const token = ls.get('access_token', { decrypt: true });
-      
-      if (token && !profile) {
+      if (token) {
         try {
           await dispatch(fetchUserMeAsync()).unwrap();
         } catch (error) {
@@ -27,7 +27,6 @@ export const useAuth = () => {
   }, [dispatch, profile, router]);
 
   return {
-    user: profile,
     isLoading,
     isAuthenticated,
   };
