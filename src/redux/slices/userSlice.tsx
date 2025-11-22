@@ -108,10 +108,10 @@ export const userSlice = createSlice({
         state.isLoading = false;
         state.authError = action.payload as string;
         state.isAuthenticated = false;
-        // Don't show toast for unauthorized - let the app handle redirect
-        if (!action.payload?.includes("401") && !action.payload?.includes("unauthorized")) {
-          Toast.fire({ icon: "error", title: state.authError });
-        }
+        // // Don't show toast for unauthorized - let the app handle redirect
+        // if (!action.payload?.includes("401") && !action.payload?.includes("unauthorized")) {
+        //   Toast.fire({ icon: "error", title: state.authError });
+        // }
       });
 
     // SIGN UP

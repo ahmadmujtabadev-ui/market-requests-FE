@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layouts';
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Filter,
+  Plus,
+  Edit,
+  Trash2,
   FileText,
   Building2,
   ExternalLink,
@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch } from '@/redux/store';
 import { fetchTemplatesAsync, deleteTemplateAsync } from '@/services/template/asyncThunk';
 import { selectTemplates } from '@/redux/slices/templateSlice';
+import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
 type TemplateType = 'residential' | 'commercial';
 
@@ -54,8 +55,7 @@ const COMMERCIAL_CATEGORIES = [
 export default function AdminTemplatesPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { items: templates, isLoading, error } = useSelector(selectTemplates);
-
+  const { items: templates, isLoading } = useSelector(selectTemplates);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<TemplateType>('residential');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -70,23 +70,37 @@ export default function AdminTemplatesPage() {
   const categories = selectedType === 'residential' ? RESIDENTIAL_CATEGORIES : COMMERCIAL_CATEGORIES;
 
   const filteredTemplates = useMemo(() => {
-    return templates.filter((template) => {
-      const matchesType = template.type === selectedType;
-      const matchesCategory = selectedCategory === 'All' || template.category === selectedCategory;
-      const matchesSearch = template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           template.category.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      return matchesType && matchesCategory && matchesSearch;
-    });
+    const list = Array.isArray(templates) ? templates : [];
+    const normalizedSearch = (searchQuery || '').toLowerCase();
+
+    return list
+      .filter(Boolean)
+      .filter((template) => {
+        const matchesType = template.type === selectedType;
+        const matchesCategory =
+          selectedCategory === 'All' || template.category === selectedCategory;
+
+        const title = (template.title || '').toLowerCase();
+        const category = (template.category || '').toLowerCase();
+
+        const matchesSearch =
+          !normalizedSearch ||
+          title.includes(normalizedSearch) ||
+          category.includes(normalizedSearch);
+
+        return matchesType && matchesCategory && matchesSearch;
+      });
   }, [templates, selectedType, selectedCategory, searchQuery]);
 
   const templateCounts = useMemo(() => {
+    const list = Array.isArray(templates) ? templates.filter(Boolean) : [];
     return {
-      total: templates.length,
-      residential: templates.filter(t => t.type === 'residential').length,
-      commercial: templates.filter(t => t.type === 'commercial').length,
+      total: list.length,
+      residential: list.filter(t => t.type === 'residential').length,
+      commercial: list.filter(t => t.type === 'commercial').length,
     };
   }, [templates]);
+
 
   const openDeleteModal = (templateId: string, templateTitle: string) => {
     setTemplateToDelete({ id: templateId, title: templateTitle });
@@ -102,18 +116,11 @@ export default function AdminTemplatesPage() {
 
   const confirmDelete = async () => {
     if (!templateToDelete) return;
-    
     setIsDeleting(true);
     try {
-      // Delete the template
-      await dispatch(deleteTemplateAsync(templateToDelete.id)).unwrap();
-      console.log('Template deleted successfully');
-      
-      // Refetch templates - don't wait for it, let Redux handle it
-      dispatch(fetchTemplatesAsync());
-      
-      // Close modal immediately
       setShowDeleteModal(false);
+      await dispatch(deleteTemplateAsync(templateToDelete.id)).unwrap();
+      dispatch(fetchTemplatesAsync());
       setTemplateToDelete(null);
     } catch (error) {
       console.error('Delete failed:', error);
@@ -142,7 +149,6 @@ export default function AdminTemplatesPage() {
       `}</style>
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
         <div className="w-full mx-auto">
-          {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <button
               onClick={() => router.push('/dashboard/admin/templates/actions/add-template-form')}
@@ -154,7 +160,6 @@ export default function AdminTemplatesPage() {
             </button>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-lg border border-[#EEEEEE] p-4">
               <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
@@ -182,16 +187,14 @@ export default function AdminTemplatesPage() {
             </div>
           </div>
 
-          {/* Type Toggle */}
           <div className="mb-6">
             <div className="inline-flex rounded-lg bg-white border border-[#EEEEEE] p-1">
               <button
                 onClick={() => handleTypeChange('residential')}
-                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${
-                  selectedType === 'residential'
-                    ? 'bg-black text-white shadow-sm'
-                    : 'text-[#595959] hover:text-black'
-                }`}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${selectedType === 'residential'
+                  ? 'bg-black text-white shadow-sm'
+                  : 'text-[#595959] hover:text-black'
+                  }`}
                 style={{ fontWeight: 700 }}
               >
                 <FileText className="w-4 h-4" />
@@ -199,11 +202,10 @@ export default function AdminTemplatesPage() {
               </button>
               <button
                 onClick={() => handleTypeChange('commercial')}
-                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${
-                  selectedType === 'commercial'
-                    ? 'bg-black text-white shadow-sm'
-                    : 'text-[#595959] hover:text-black'
-                }`}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${selectedType === 'commercial'
+                  ? 'bg-black text-white shadow-sm'
+                  : 'text-[#595959] hover:text-black'
+                  }`}
                 style={{ fontWeight: 700 }}
               >
                 <Building2 className="w-4 h-4" />
@@ -212,7 +214,6 @@ export default function AdminTemplatesPage() {
             </div>
           </div>
 
-          {/* Filters */}
           <div className="bg-white rounded-lg border border-[#EEEEEE] p-4 mb-6">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1 relative">
@@ -245,31 +246,15 @@ export default function AdminTemplatesPage() {
             </div>
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-600 font-roboto" style={{ fontWeight: 400 }}>
-                {error}
-              </p>
-            </div>
-          )}
-
-          {/* Results Count */}
           <div className="mb-4">
             <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
               Showing {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
             </p>
           </div>
 
-          {/* Templates Table */}
-          <div className="bg-white rounded-lg border border-[#EEEEEE] overflow-hidden">
+          <div>
             {isLoading ? (
-              <div className="p-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#EEEEEE] border-t-black"></div>
-                <p className="text-sm text-[#595959] font-roboto mt-4" style={{ fontWeight: 400 }}>
-                  Loading templates...
-                </p>
-              </div>
+              <LoadingOverlay isVisible />
             ) : filteredTemplates.length === 0 ? (
               <div className="p-12 text-center">
                 <FileText className="w-12 h-12 text-[#595959] mx-auto mb-4" />
@@ -331,11 +316,10 @@ export default function AdminTemplatesPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-roboto ${
-                            template.type === 'residential' 
-                              ? 'bg-black text-white' 
-                              : 'bg-[#595959] text-white'
-                          }`} style={{ fontWeight: 600 }}>
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-roboto ${template.type === 'residential'
+                            ? 'bg-black text-white'
+                            : 'bg-[#595959] text-white'
+                            }`} style={{ fontWeight: 600 }}>
                             {template.type === 'residential' ? <FileText className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
                             {template.type === 'residential' ? 'Residential' : 'Commercial'}
                           </span>
@@ -384,7 +368,6 @@ export default function AdminTemplatesPage() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && templateToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
@@ -408,7 +391,7 @@ export default function AdminTemplatesPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={closeDeleteModal}
@@ -425,10 +408,7 @@ export default function AdminTemplatesPage() {
                 style={{ fontWeight: 600 }}
               >
                 {isDeleting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Deleting...
-                  </>
+                  <LoadingOverlay isVisible />
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4" />

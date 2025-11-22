@@ -8,7 +8,8 @@ import {
 } from '@/services/dashboard/asyncThunk';
 
 import type { AppDispatch } from '@/redux/store';
-import { selectDashboardLoading, selectIsDataStale, selectOverviewStats, selectRecentRequests } from '@/redux/slices/dashboardSlice';
+import { selectDashboardLoading, selectOverviewStats, selectRecentRequests } from '@/redux/slices/dashboardSlice';
+import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
 type RequestStatus = 'new' | 'progress' | 'revision' | 'completed';
 
@@ -133,31 +134,18 @@ function RecentRequestRow({
   );
 }
 
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center justify-center py-12">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
-    </div>
-  );
-}
-
 export default function DashboardOverviewPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
-  // Redux selectors
   const isLoading = useSelector(selectDashboardLoading);
   const overviewStats = useSelector(selectOverviewStats);
-  // console.log("over", overviewStats)
   const recentRequests = useSelector(selectRecentRequests);
-  // const isDataStale = useSelector(selectIsDataStale);
 
-  // Fetch dashboard stats on mount and when data is stale
   useEffect(() => {
     dispatch(fetchDashboardStatsAsync());
   }, [dispatch]);
 
-  // Build stat cards from Redux data
   const stats: StatCardData[] = overviewStats ? [
     {
       title: 'Total Requests',
@@ -209,19 +197,8 @@ export default function DashboardOverviewPage() {
 
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
         <div className="w-full mx-auto">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h1 className="text-3xl text-black font-manrope mb-2" style={{ fontWeight: 800 }}>
-              Welcome Back, Agent
-            </h1>
-            <p className="text-base text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-              Here is an overview of your marketing requests and activity
-            </p>
-          </div>
-
-          {/* Stats Grid */}
-          {isLoading && !overviewStats ? (
-            <LoadingSpinner />
+          {isLoading  ? (
+            <LoadingOverlay isVisible />
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -230,7 +207,6 @@ export default function DashboardOverviewPage() {
                 ))}
               </div>
 
-              {/* Quick Actions */}
               <div className="mb-8">
                 <h2 className="text-xl text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
                   Quick Actions
@@ -257,7 +233,6 @@ export default function DashboardOverviewPage() {
                 </div>
               </div>
 
-              {/* Recent Requests */}
               <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl text-black font-manrope" style={{ fontWeight: 700 }}>

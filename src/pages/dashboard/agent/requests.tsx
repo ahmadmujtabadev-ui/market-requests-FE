@@ -378,7 +378,7 @@ function RequestDetailModal({ request, onClose }: { request: Request | null; onC
 export default function MyRequestsPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { items: requests, isLoading, error } = useSelector(selectRequests);
+  const { items: requests, isLoading } = useSelector(selectRequests);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('all');
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
@@ -390,9 +390,9 @@ export default function MyRequestsPage() {
   const filteredRequests = useMemo(() => {
     return requests?.filter((request) => {
       const matchesSearch = 
-        request.projectTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.template?.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.template?.category.toLowerCase().includes(searchQuery.toLowerCase());
+        request?.projectTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request?.template?.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request?.template?.category.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
       
@@ -426,24 +426,8 @@ export default function MyRequestsPage() {
 
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
         <div className="w-full mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-     
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-600 font-roboto" style={{ fontWeight: 400 }}>
-                {error}
-              </p>
-            </div>
-          )}
-
-          {/* Filters */}
           <div className="bg-white rounded-lg border border-[#EEEEEE] p-4 mb-6">
             <div className="flex flex-col lg:flex-row gap-4">
-              {/* Search */}
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#595959]" />
                 <input
@@ -456,7 +440,6 @@ export default function MyRequestsPage() {
                 />
               </div>
 
-              {/* Status Filter */}
               <div className="lg:w-64 relative">
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#595959] pointer-events-none" />
                 <select
@@ -476,14 +459,12 @@ export default function MyRequestsPage() {
             </div>
           </div>
 
-          {/* Results Count */}
           <div className="mb-4">
             <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
               Showing {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''}
             </p>
           </div>
 
-          {/* Requests Grid */}
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -529,8 +510,6 @@ export default function MyRequestsPage() {
           )}
         </div>
       </div>
-
-      {/* Detail Modal */}
       <RequestDetailModal
         request={selectedRequest}
         onClose={() => setSelectedRequest(null)}

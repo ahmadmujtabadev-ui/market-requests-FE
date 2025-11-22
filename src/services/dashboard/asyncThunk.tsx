@@ -8,22 +8,16 @@ type Reject = string;
 
 export const fetchDashboardStatsAsync = createAsyncThunk<
   DashboardStats,
-  void,                       // no args, if you read token yourself or no token
+  void,                      
   { rejectValue: Reject }
 >(
   "dashboard/fetchStats",
   async (_, { rejectWithValue }) => {
     try {
-      // If you need token like templates:
-      // const token = `${ls.get("access_token", { decrypt: true })}`;
-      // if (!token) return rejectWithValue("Missing access token");
-      // HttpService.setToken(token);
-
       const res = await dashboardService.getStats();
       console.log("dashboard response:", res);
 
-      // ⬅ THIS is the key line
-      const stats = res.stats; // inner object with overview/statusBreakdown/recentRequests
+      const stats = res.stats; 
 
       return stats as DashboardStats;
     } catch (e: any) {

@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch } from '@/redux/store';
 import { selectTemplates } from '@/redux/slices/templateSlice';
 import { fetchTemplatesAsync } from '@/services/template/asyncThunk';
+import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
 type TemplateType = 'residential' | 'commercial';
 
@@ -43,13 +44,10 @@ export default function TemplateLibraryPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { items: templates, isLoading, error } = useSelector(selectTemplates);
-  console.log("items",templates)
-
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<TemplateType>('residential');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  // Fetch templates on mount and when type changes
   useEffect(() => {
     dispatch(fetchTemplatesAsync({ type: selectedType }));
   }, [dispatch, selectedType]);
@@ -122,10 +120,8 @@ export default function TemplateLibraryPage() {
             </div>
           </div>
 
-          {/* Search and Filter Bar */}
           <div className="mb-6 bg-white rounded-lg border border-[#EEEEEE] p-4">
             <div className="flex flex-col lg:flex-row gap-4">
-              {/* Search */}
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#595959]" />
                 <input
@@ -138,7 +134,6 @@ export default function TemplateLibraryPage() {
                 />
               </div>
 
-              {/* Category Filter */}
               <div className="lg:w-64">
                 <div className="relative">
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#595959]" />
@@ -159,16 +154,6 @@ export default function TemplateLibraryPage() {
             </div>
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-600 font-roboto" style={{ fontWeight: 400 }}>
-                {error}
-              </p>
-            </div>
-          )}
-
-          {/* Results Count */}
           <div className="mb-4">
             <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
               Showing {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
@@ -176,17 +161,8 @@ export default function TemplateLibraryPage() {
             </p>
           </div>
 
-          {/* Templates Grid */}
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-white rounded-lg border border-[#EEEEEE] p-4 animate-pulse">
-                  <div className="aspect-video bg-[#EEEEEE] rounded-lg mb-4"></div>
-                  <div className="h-4 bg-[#EEEEEE] rounded mb-2"></div>
-                  <div className="h-3 bg-[#EEEEEE] rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
+           <LoadingOverlay isVisible/>
           ) : filteredTemplates.length === 0 ? (
             <div className="bg-white rounded-lg border border-[#EEEEEE] p-12 text-center">
               <FileText className="w-12 h-12 text-[#595959] mx-auto mb-4" />
@@ -204,7 +180,6 @@ export default function TemplateLibraryPage() {
                   key={template.id}
                   className="bg-white rounded-lg border border-[#EEEEEE] overflow-hidden hover:shadow-lg transition-shadow group"
                 >
-                  {/* Preview Image */}
                   <div className="aspect-video bg-[#EEEEEE] relative overflow-hidden">
                     {template.previewUrl ? (
                       <img
@@ -217,13 +192,11 @@ export default function TemplateLibraryPage() {
                         <FileText className="w-12 h-12 text-[#595959]" />
                       </div>
                     )}
-                    {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                       <Eye className="w-8 h-8 text-white" />
                     </div>
                   </div>
 
-                  {/* Content */}
                   <div className="p-4">
                     <div className="mb-3">
                       <span className="inline-block px-2 py-1 bg-[#EEEEEE] text-[#595959] text-xs rounded font-roboto" style={{ fontWeight: 500 }}>
@@ -234,7 +207,6 @@ export default function TemplateLibraryPage() {
                       {template.title}
                     </h3>
 
-                    {/* Actions */}
                     <div className="flex gap-2">
                       {template.canvaUrl && (
                         <a

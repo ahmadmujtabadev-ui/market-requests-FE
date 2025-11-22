@@ -5,24 +5,23 @@ import { Users, Plus, Edit, Trash2, Lock, Power, Search, Filter, ChevronDown, X,
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { DashboardLayout } from '@/components/layouts';
-import { 
-  adminResetPasswordAsync, 
+import {
+  adminResetPasswordAsync,
   deleteUserAsync,
-  fetchUsersAsync, 
-  fetchUserStatsAsync, 
-  toggleUserActiveAsync 
+  fetchUsersAsync,
+  fetchUserStatsAsync,
+  toggleUserActiveAsync
 } from '@/services/admin/asyncThunk';
 import { User } from '@/types/user';
+import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
 export default function UserManagementPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { 
-    users, 
-    stats,  
-    loading, 
-    error, 
-    successMessage,
+  const {
+    users,
+    stats,
+    loading,
   } = useAppSelector((state) => state.admin);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -37,11 +36,11 @@ export default function UserManagementPage() {
   const [isResetting, setIsResetting] = useState<boolean>(false);
 
   useEffect(() => {
-    dispatch(fetchUsersAsync({ 
-      search: searchQuery, 
-      role: selectedRole, 
+    dispatch(fetchUsersAsync({
+      search: searchQuery,
+      role: selectedRole,
       page: 1,
-      limit: 10 
+      limit: 10
     }));
     dispatch(fetchUserStatsAsync());
   }, [dispatch, searchQuery, selectedRole, selectedStatus]);
@@ -49,10 +48,10 @@ export default function UserManagementPage() {
   const filteredUsers = useMemo(() => {
     return users?.filter((user: User) => {
       const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           user.email.toLowerCase().includes(searchQuery.toLowerCase());
+        user.email.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesRole = !selectedRole || user.role === selectedRole;
       const matchesStatus = !selectedStatus || user.isActive.toString() === selectedStatus;
-      
+
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [users, searchQuery, selectedRole, selectedStatus]);
@@ -71,7 +70,7 @@ export default function UserManagementPage() {
 
   const confirmDelete = async () => {
     if (!userToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       await dispatch(deleteUserAsync(userToDelete.id)).unwrap();
@@ -102,12 +101,12 @@ export default function UserManagementPage() {
 
   const confirmResetPassword = async () => {
     if (!userToResetPassword || newPassword.length < 8) return;
-    
+
     setIsResetting(true);
     try {
-      await dispatch(adminResetPasswordAsync({ 
-        id: userToResetPassword.id, 
-        data: { newPassword } 
+      await dispatch(adminResetPasswordAsync({
+        id: userToResetPassword.id,
+        data: { newPassword }
       })).unwrap();
       setShowResetPasswordModal(false);
       setUserToResetPassword(null);
@@ -232,23 +231,6 @@ export default function UserManagementPage() {
             </div>
           )}
 
-          {/* Alerts */}
-          {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-600 font-roboto" style={{ fontWeight: 400 }}>
-                {error}
-              </p>
-            </div>
-          )}
-          {successMessage && (
-            <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-sm text-green-600 font-roboto" style={{ fontWeight: 400 }}>
-                {successMessage}
-              </p>
-            </div>
-          )}
-
-          {/* Filters */}
           <div className="bg-white rounded-lg border border-[#EEEEEE] p-4 mb-6">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1 relative">
@@ -293,22 +275,15 @@ export default function UserManagementPage() {
             </div>
           </div>
 
-          {/* Results Count */}
           <div className="mb-4">
             <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
               Showing {filteredUsers?.length} user{filteredUsers?.length !== 1 ? 's' : ''}
             </p>
           </div>
 
-          {/* Users Table */}
           <div className="bg-white rounded-lg border border-[#EEEEEE] overflow-hidden">
             {loading ? (
-              <div className="p-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#EEEEEE] border-t-black"></div>
-                <p className="text-sm text-[#595959] font-roboto mt-4" style={{ fontWeight: 400 }}>
-                  Loading users...
-                </p>
-              </div>
+              <LoadingOverlay isVisible />
             ) : filteredUsers?.length === 0 ? (
               <div className="p-12 text-center">
                 <Users className="w-12 h-12 text-[#595959] mx-auto mb-4" />
@@ -363,31 +338,20 @@ export default function UserManagementPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-roboto ${
-                            user?.isActive 
-                              ? 'bg-green-100 text-green-700' 
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-roboto ${user?.isActive
+                              ? 'bg-green-100 text-green-700'
                               : 'bg-red-100 text-red-700'
-                          }`} style={{ fontWeight: 600 }}>
+                            }`} style={{ fontWeight: 600 }}>
                             <div className={`w-2 h-2 rounded-full ${user?.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
                             {user?.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        {/* <td className="px-6 py-4">
-                          <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 500 }}>
-                            {user?.requestCount || 0}
-                          </p>
-                        </td> */}
                         <td className="px-6 py-4">
                           <p className="text-sm text-[#595959] font-roboto flex items-center gap-1" style={{ fontWeight: 400 }}>
                             <Calendar className="w-3 h-3" />
                             {new Date(user?.createdAt).toLocaleDateString()}
                           </p>
                         </td>
-                        {/* <td className="px-6 py-4">
-                          <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                            {user?.lastLoginAt ? new Date(user?.lastLoginAt).toLocaleDateString() : 'Never'}
-                          </p>
-                        </td> */}
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
                             <button
@@ -406,11 +370,10 @@ export default function UserManagementPage() {
                             </button>
                             <button
                               onClick={() => handleToggleActive(user.id)}
-                              className={`p-2 rounded-lg transition-colors ${
-                                user.isActive 
-                                  ? 'hover:bg-yellow-50' 
+                              className={`p-2 rounded-lg transition-colors ${user.isActive
+                                  ? 'hover:bg-yellow-50'
                                   : 'hover:bg-green-50'
-                              }`}
+                                }`}
                               title={user.isActive ? 'Deactivate' : 'Activate'}
                             >
                               <Power className={`w-4 h-4 ${user.isActive ? 'text-yellow-600' : 'text-green-600'}`} />
@@ -457,7 +420,7 @@ export default function UserManagementPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={closeDeleteModal}
@@ -474,10 +437,7 @@ export default function UserManagementPage() {
                 style={{ fontWeight: 600 }}
               >
                 {isDeleting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Deleting...
-                  </>
+                  <LoadingOverlay isVisible />
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4" />
@@ -513,7 +473,7 @@ export default function UserManagementPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="mb-6">
               <label className="block text-sm font-roboto text-black mb-2" style={{ fontWeight: 500 }}>
                 New Password
@@ -527,7 +487,7 @@ export default function UserManagementPage() {
                 style={{ fontWeight: 400 }}
               />
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={closeResetPasswordModal}

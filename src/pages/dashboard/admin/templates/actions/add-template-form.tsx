@@ -6,6 +6,7 @@ import * as Yup from 'yup';
 import { useAppDispatch } from '@/hooks/hooks';
 import { useRouter } from 'next/router';
 import { createTemplateAsync, updateTemplateAsync } from '@/services/template/asyncThunk';
+import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
 const RESIDENTIAL_CATEGORIES = [
   'Guides',
@@ -68,7 +69,6 @@ export default function AddTemplateForm({
   const router = useRouter();
   console.log("initial 70",initialTemplate)
 
-  // Validation schema depends on whether we already have a preview image (edit mode)
   const validationSchema = Yup.object({
     title: Yup.string()
       .required('Template title is required')
@@ -108,11 +108,11 @@ export default function AddTemplateForm({
           await dispatch(
             updateTemplateAsync({ id: templateId, data: formData })
           ).unwrap();
-          router.push('/dashboard/admin/templates/templates');
+          router.push('/dashboard/admin/templates/template');
 
         } else {
           await dispatch(createTemplateAsync(formData)).unwrap();
-          router.push('/dashboard/admin/templates/templates');
+          router.push('/dashboard/admin/templates/template');
         }
 
       } catch (error) {
@@ -128,7 +128,6 @@ export default function AddTemplateForm({
     },
   });
 
-  // When editing, prefill form values and preview image
   useEffect(() => {
     if (mode === 'edit' && initialTemplate) {
       formik.setValues({
@@ -143,7 +142,6 @@ export default function AddTemplateForm({
         setPreviewImage(initialTemplate.previewUrl);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, initialTemplate]);
 
   const categories =
@@ -176,15 +174,7 @@ export default function AddTemplateForm({
   };
 
   const handleBack = () => {
-    if (
-      formik.dirty &&
-      !window.confirm(
-        'You have unsaved changes. Are you sure you want to leave?'
-      )
-    ) {
-      return;
-    }
-    router.push('/dashboard/admin/templates');
+    router.push('/dashboard/admin/templates/template');
   };
 
   const isEdit = mode === 'edit';
@@ -234,7 +224,6 @@ export default function AddTemplateForm({
               </p>
             </div>
 
-            {/* Form Container */}
             <form onSubmit={formik.handleSubmit}>
               <div className="bg-white rounded-lg border border-[#EEEEEE] p-6 mb-6">
                 {/* Template Type */}
@@ -273,7 +262,6 @@ export default function AddTemplateForm({
                   </div>
                 </div>
 
-                {/* Template Title */}
                 <div className="mb-6">
                   <label
                     htmlFor="title"
@@ -306,7 +294,6 @@ export default function AddTemplateForm({
                   )}
                 </div>
 
-                {/* Category */}
                 <div className="mb-6">
                   <label
                     htmlFor="category"
@@ -344,7 +331,6 @@ export default function AddTemplateForm({
                   )}
                 </div>
 
-                {/* Canva URL */}
                 <div className="mb-6">
                   <label
                     htmlFor="canvaUrl"
@@ -383,7 +369,6 @@ export default function AddTemplateForm({
                   </p>
                 </div>
 
-                {/* Preview Image Upload */}
                 <div className="mb-6">
                   <label
                     className="block text-sm text-black font-manrope mb-2"
@@ -451,7 +436,6 @@ export default function AddTemplateForm({
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex items-center justify-end gap-4">
                 <button
                   type="button"
@@ -468,10 +452,7 @@ export default function AddTemplateForm({
                   style={{ fontWeight: 700 }}
                 >
                   {formik.isSubmitting ? (
-                    <>
-                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                      {isEdit ? 'Updating...' : 'Creating...'}
-                    </>
+                      <LoadingOverlay isVisible />
                   ) : (
                     <>
                       <Save className="w-5 h-5" />

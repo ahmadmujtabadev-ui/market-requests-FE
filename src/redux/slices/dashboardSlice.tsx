@@ -59,10 +59,10 @@ export const dashboardSlice = createSlice({
       .addCase(fetchDashboardStatsAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
-        Toast.fire({
-          icon: "error",
-          title: action.payload || "Failed to load dashboard stats",
-        });
+        // Toast.fire({
+        //   icon: "error",
+        //   title: action.payload || "Failed to load dashboard stats",
+        // });
       });
   },
 });

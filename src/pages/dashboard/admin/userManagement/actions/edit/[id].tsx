@@ -7,6 +7,7 @@ import type { AppDispatch } from '@/redux/store';
 import AddEditUserForm from '../add-user-form';
 import { fetchUserByIdAsync } from '@/services/admin/asyncThunk';
 import { User } from '@/types/user';
+import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
 export default function EditUserPage() {
     const router = useRouter();
@@ -18,9 +19,7 @@ export default function EditUserPage() {
 
     useEffect(() => {
         if (!router.isReady || typeof id !== 'string') return;
-
         setUserId(id);
-
         const loadUser = async () => {
             try {
                 const response = await dispatch(fetchUserByIdAsync(id)).unwrap();
@@ -28,24 +27,15 @@ export default function EditUserPage() {
                 setInitialUser(userData);
             } catch (err: any) {
                 console.error('Failed to fetch user', err);
-
-            } finally {
-            }
+            } 
         };
-
         loadUser();
     }, [router.isReady, id, dispatch, router]);
 
 
     if (!userId || !initialUser) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-[#EEEEEE]">
-                <div className="text-center">
-                    <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                        User not found
-                    </p>
-                </div>
-            </div>
+            <LoadingOverlay isVisible/>
         );
     }
 

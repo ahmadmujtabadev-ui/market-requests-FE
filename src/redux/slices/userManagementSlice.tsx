@@ -63,12 +63,10 @@ const userManagementSlice = createSlice({
       state.currentUser = null;
     },
     setFilters: (state) => {
-      // Store filter state if needed
       state.error = null;
     },
   },
   extraReducers: (builder) => {
-    // Fetch Users
     builder
       .addCase(fetchUsersAsync.pending, (state) => {
         state.loading = true;
@@ -87,7 +85,6 @@ const userManagementSlice = createSlice({
         state.error = action?.payload || "Failed to fetch users";
       });
 
-    // Fetch User by ID
     builder
       .addCase(fetchUserByIdAsync.pending, (state) => {
         state.loading = true;
@@ -105,7 +102,6 @@ const userManagementSlice = createSlice({
         state.error = action.payload || "Failed to fetch user";
       });
 
-    // Create User
     builder
       .addCase(createUserAsync.pending, (state) => {
         state.createLoading = true;
@@ -133,18 +129,17 @@ const userManagementSlice = createSlice({
         (state, action: PayloadAction<UpdateUserResponse>) => {
           state.updateLoading = false;
 
-          const updatedUser = action.payload.user;
-
-          const index = state.users.findIndex((u) => u.id === updatedUser.id);
+          const updatedUser = action?.payload?.user;
+          console.log("updated", updatedUser)
+          const index = state.users.findIndex((u) => u?.id === updatedUser?.id);
           if (index !== -1) {
             state.users[index] = updatedUser;
           }
 
-          if (state.currentUser?.id === updatedUser.id) {
+          if (state.currentUser?.id === updatedUser?.id) {
             state.currentUser = updatedUser;
           }
-
-          state.successMessage = action.payload.message;
+          state.successMessage = action?.payload?.message;
         }
       )
 
@@ -153,7 +148,6 @@ const userManagementSlice = createSlice({
         state.error = action.payload || "Failed to update user";
       });
 
-    // Delete User
     builder
       .addCase(deleteUserAsync.pending, (state) => {
         state.deleteLoading = true;
@@ -170,7 +164,6 @@ const userManagementSlice = createSlice({
         state.error = action.payload || "Failed to delete user";
       });
 
-    // Admin Reset Password
     builder
       .addCase(adminResetPasswordAsync.pending, (state) => {
         state.resetPasswordLoading = true;
@@ -186,7 +179,6 @@ const userManagementSlice = createSlice({
         state.error = action.payload || "Failed to reset password";
       });
 
-    // Toggle User Active
     builder
       .addCase(toggleUserActiveAsync.pending, (state) => {
         state.toggleActiveLoading = true;
@@ -211,7 +203,6 @@ const userManagementSlice = createSlice({
         state.error = action.payload || "Failed to toggle user status";
       });
 
-    // Fetch Stats
     builder
       .addCase(fetchUserStatsAsync.pending, (state) => {
         state.loading = true;

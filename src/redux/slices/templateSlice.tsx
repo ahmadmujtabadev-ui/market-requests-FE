@@ -141,7 +141,6 @@ export const templateSlice = createSlice({
     builder
       .addCase(deleteTemplateAsync.pending, (state) => {
         state.isLoading = true;
-        state.error = "";
       })
       .addCase(
         deleteTemplateAsync.fulfilled,
@@ -153,7 +152,6 @@ export const templateSlice = createSlice({
           if (state.selectedTemplate?.id === action.payload.id) {
             state.selectedTemplate = null;
           }
-          // Show success toast
           Toast.fire({ icon: "success", title: "Template deleted successfully" });
         }
       )

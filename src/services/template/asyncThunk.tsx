@@ -12,7 +12,7 @@ import { templateService, TemplateType } from "./enpoints";
  */
 export const fetchTemplatesAsync = createAsyncThunk(
   "template/fetchTemplates",
-  
+
   async (
     params?: { type?: TemplateType; category?: string },
   ) => {
@@ -23,7 +23,7 @@ export const fetchTemplatesAsync = createAsyncThunk(
       const response = await templateService.list(params);
       console.log("response", response)
 
-  
+
       // Handle the 'templates' key from backend
       const data = Array.isArray(response)
         ? response
@@ -76,16 +76,12 @@ export const createTemplateAsync = createAsyncThunk(
       HttpService.setToken(token);
 
       // const response = await templateService.create(dto);
-       const response = await templateService.create(dto, {
+      const response = await templateService.create(dto, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      if (response) {
-        Toast.fire({ icon: "success", title: "Template created successfully" });
-      }
-
-      if (!response.success || response.status === 400) {
-        return rejectWithValue(response.message);
+      if (response.message === "Template created") {
+        Toast.fire({ icon: "success", title: response.message });
       }
 
       return response;
@@ -114,12 +110,8 @@ export const updateTemplateAsync = createAsyncThunk(
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      if (response?.success || response?.status === 200) {
+      if (response.message === "Template updated") {
         Toast.fire({ icon: "success", title: response.message as string });
-      }
-
-      if (!response.success || response.status === 400) {
-        return rejectWithValue(response.message);
       }
 
       return response.data;
@@ -140,16 +132,12 @@ export const deleteTemplateAsync = createAsyncThunk(
 
       const response = await templateService.remove(id);
 
-      console.log('Delete response:', response);
-
-      // Check if deletion failed
-      if (!response?.success && response?.status !== 200 && response?.status !== 204) {
-        return rejectWithValue(response?.message || "Failed to delete template");
+      if (response.message === "Template deleted") {
+        Toast.fire({ icon: "success", title: response.message as string });
+        return { id };
+      } else {
+        Toast.fire({ icon: "error", title: response.message as string });
       }
-
-      // Return the ID that was deleted
-      return { id };
-      
     } catch (error: any) {
       console.error('Delete error:', error);
       const errorMessage = error?.response?.data?.message || "Failed to delete template";

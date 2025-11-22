@@ -7,6 +7,7 @@ import { useAppDispatch,  } from '@/hooks/hooks';
 import { DashboardLayout } from '@/components/layouts';
 import { createUserAsync, updateUserAsync } from '@/services/admin/asyncThunk';
 import { AddEditUserFormProps, FormErrors, UserFormData } from '@/types/user';
+import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
 export default function AddEditUserForm({ 
   mode = 'add', 
@@ -277,8 +278,7 @@ export default function AddEditUserForm({
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  {isEditMode ? 'Updating...' : 'Creating...'}
+                <LoadingOverlay isVisible/>
                 </>
               ) : (
                 <>
