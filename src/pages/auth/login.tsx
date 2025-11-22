@@ -81,7 +81,7 @@ const Login = () => {
 
     }
     if (loginResponse?.user.role === "va") {
-      router.push('/dashboard/vs/stat');
+      router.push('/dashboard/vs/requestque');
     }
 
   };
