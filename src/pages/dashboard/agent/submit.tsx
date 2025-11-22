@@ -30,7 +30,7 @@ export default function SubmitRequestPage() {
   const [notes, setNotes] = useState('');
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  console.log(error)
   const [isDragging, setIsDragging] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [deadline, setDeadline] = useState('');
@@ -147,10 +147,8 @@ export default function SubmitRequestPage() {
         notes: notes.trim() || undefined,
         fileUrls: fileUrls.filter(Boolean),
       };
-      const result = await dispatch(createRequestAsync(requestData)).unwrap();
-      if (result) {
-        setSuccess(true);
-      }
+      await dispatch(createRequestAsync(requestData)).unwrap();
+
     } catch (err: any) {
       setError(err?.message || 'Failed to submit request. Please try again.');
     }

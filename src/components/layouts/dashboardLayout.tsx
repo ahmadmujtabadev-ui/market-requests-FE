@@ -58,7 +58,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     setProfileDropdownOpen(false);
   };
 
-  const userRole: string = profile?.role?.toLowerCase() || 'agent';
+  // ---- ROLE HANDLING (ADMIN / AGENT / VA) ----
+  const rawRole = profile?.role?.toLowerCase() || 'agent';
+
+  // normalize to one of: admin | agent | va
+  const userRole: 'admin' | 'agent' | 'va' =
+    rawRole === 'admin'
+      ? 'admin'
+      : rawRole === 'va' || rawRole === 'virtual_assistant' || rawRole === 'virtual assistant'
+        ? 'va'
+        : 'agent';
+
   const userName: string = profile?.businessName || profile?.name || 'User';
   const userEmail: string = profile?.email || 'user@company.com';
 
@@ -125,7 +135,31 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     },
   ];
 
-  const navigation: NavigationItem[] = userRole === 'admin' ? adminNavigation : agentNavigation;
+  // ---- NEW: VIRTUAL ASSISTANT NAVIGATION ----
+  const vaNavigation: NavigationItem[] = [
+    {
+      name: 'Work Queue',
+      href: '/dashboard/vs/requestque',
+      icon: LayoutDashboard,
+      current: router.pathname === '/dashboard/vs/requestque',
+      description: 'All incoming requests (by status)',
+    },
+    // you can add more VA pages later, e.g. History, Reports, etc.
+    // {
+    //   name: 'Completed Jobs',
+    //   href: '/dashboard/va/completed',
+    //   icon: FolderOpen,
+    //   current: router.pathname === '/dashboard/va/completed',
+    //   description: 'Previously completed requests',
+    // },
+  ];
+
+  const navigation: NavigationItem[] =
+    userRole === 'admin'
+      ? adminNavigation
+      : userRole === 'va'
+        ? vaNavigation
+        : agentNavigation;
 
   interface UserSettingItem {
     name: string;
@@ -223,11 +257,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                           {userEmail}
                         </p>
                         <span
-                          className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${
-                            userRole === 'admin'
-                              ? 'bg-black text-white'
-                              : 'bg-[#595959] text-white'
-                          }`}
+                          className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${userRole === 'admin'
+                            ? 'bg-black text-white'
+                            : 'bg-[#595959] text-white'
+                            }`}
                           style={{ fontWeight: 700 }}
                         >
                           {userRole === 'admin' ? 'Admin' : 'Agent'}
@@ -243,7 +276,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     className="px-3 text-xs text-[#595959] uppercase tracking-wider mb-3 font-manrope"
                     style={{ fontWeight: 800 }}
                   >
-                    {userRole === 'admin' ? 'Admin Panel' : 'Main Menu'}
+                    {userRole === 'admin'
+                      ? 'Admin Panel'
+                      : userRole === 'va'
+                        ? 'VA Panel'
+                        : 'Main Menu'}
                   </p>
                   {navigation.map((item) => {
                     const IconComponent = item.icon;
@@ -251,30 +288,26 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       <a
                         key={item.name}
                         href={item.href}
-                        className={`${
-                          item.current
-                            ? 'bg-black text-white shadow-md'
-                            : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                        } group flex items-center px-4 py-3.5 text-sm rounded-lg transition-all duration-200`}
+                        className={`${item.current
+                          ? 'bg-black text-white shadow-md'
+                          : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
+                          } group flex items-center px-4 py-3.5 text-sm rounded-lg transition-all duration-200`}
                       >
                         <IconComponent
-                          className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                            item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
-                          }`}
+                          className={`mr-3 flex-shrink-0 h-5 w-5 ${item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
+                            }`}
                         />
                         <div className="flex-1">
                           <p
-                            className={`font-manrope ${
-                              item.current ? 'text-white' : 'text-[#595959]'
-                            }`}
+                            className={`font-manrope ${item.current ? 'text-white' : 'text-[#595959]'
+                              }`}
                             style={{ fontWeight: 800 }}
                           >
                             {item.name}
                           </p>
                           <p
-                            className={`text-xs mt-0.5 font-roboto ${
-                              item.current ? 'text-white/80' : 'text-[#595959]'
-                            }`}
+                            className={`text-xs mt-0.5 font-roboto ${item.current ? 'text-white/80' : 'text-[#595959]'
+                              }`}
                             style={{ fontWeight: 300 }}
                           >
                             {item.description}
@@ -301,11 +334,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                             handleLogout();
                           }
                         }}
-                        className={`${
-                          item.name === 'Logout'
-                            ? 'text-red-600 hover:bg-red-50'
-                            : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                        } group flex items-center px-4 py-3 text-sm rounded-lg transition-all duration-200 cursor-pointer`}
+                        className={`${item.name === 'Logout'
+                          ? 'text-red-600 hover:bg-red-50'
+                          : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
+                          } group flex items-center px-4 py-3 text-sm rounded-lg transition-all duration-200 cursor-pointer`}
                       >
                         <IconComponent className="mr-3 flex-shrink-0 h-5 w-5" />
                         <span className="font-manrope" style={{ fontWeight: 700 }}>
@@ -379,11 +411,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                         {userEmail}
                       </p>
                       <span
-                        className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${
-                          userRole === 'admin'
-                            ? 'bg-black text-white'
-                            : 'bg-[#595959] text-white'
-                        }`}
+                        className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${userRole === 'admin'
+                          ? 'bg-black text-white'
+                          : 'bg-[#595959] text-white'
+                          }`}
                         style={{ fontWeight: 700 }}
                       >
                         {userRole === 'admin' ? 'Admin' : 'Agent'}
@@ -402,16 +433,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                         key={item.name}
                         href={item.href}
                         onClick={() => setSidebarOpen(false)}
-                        className={`${
-                          item.current
-                            ? 'bg-black text-white shadow-md'
-                            : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                        } group flex items-center px-4 py-3.5 text-base rounded-lg transition-all duration-200`}
+                        className={`${item.current
+                          ? 'bg-black text-white shadow-md'
+                          : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
+                          } group flex items-center px-4 py-3.5 text-base rounded-lg transition-all duration-200`}
                       >
                         <IconComponent
-                          className={`mr-3 flex-shrink-0 h-6 w-6 ${
-                            item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
-                          }`}
+                          className={`mr-3 flex-shrink-0 h-6 w-6 ${item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
+                            }`}
                         />
                         <span className="flex-1 font-manrope" style={{ fontWeight: 800 }}>
                           {item.name}
@@ -437,11 +466,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                           }
                           setSidebarOpen(false);
                         }}
-                        className={`${
-                          item.name === 'Logout'
-                            ? 'text-red-600 hover:bg-red-50'
-                            : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                        } group flex items-center px-4 py-3 text-base rounded-lg transition-all duration-200 cursor-pointer`}
+                        className={`${item.name === 'Logout'
+                          ? 'text-red-600 hover:bg-red-50'
+                          : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
+                          } group flex items-center px-4 py-3 text-base rounded-lg transition-all duration-200 cursor-pointer`}
                       >
                         <IconComponent className="mr-3 flex-shrink-0 h-6 w-6" />
                         <span className="font-manrope" style={{ fontWeight: 700 }}>
@@ -504,9 +532,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                      className={`flex items-center justify-center rounded-full h-10 w-10 transition-all duration-200 shadow-sm ${
-                        profile ? '' : 'bg-black hover:bg-[#595959]'
-                      }`}
+                      className={`flex items-center justify-center rounded-full h-10 w-10 transition-all duration-200 shadow-sm ${profile ? '' : 'bg-black hover:bg-[#595959]'
+                        }`}
                     >
                       {profile.profileImage ? (
                         <img

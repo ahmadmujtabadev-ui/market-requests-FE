@@ -4,6 +4,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import ls from "localstorage-slim";
 import { HttpService } from "../index";
 import { CreateRequestDto, requestService, RequestStatus, UpdateRequestDto } from "./endpoint";
+import Toast from "@/components/Toast";
 
 /**
  * Fetch all requests with optional filters
@@ -19,7 +20,7 @@ export const fetchRequestsAsync = createAsyncThunk(
 
       const response = await requestService.list(params);
 
-  
+
       // Handle the 'requests' key from backend
       const data = Array.isArray(response)
         ? response
@@ -47,7 +48,7 @@ export const fetchRequestByIdAsync = createAsyncThunk(
       const response = await requestService.getById(id);
 
       if (!response?.message) {
-        return rejectWithValue(response.message || "Failed to fetch request");
+        Toast.fire({ icon: "success", title: response.message as string });
       }
 
       return response.request || response.data;
@@ -67,7 +68,7 @@ export const createRequestAsync = createAsyncThunk(
   async (dto: CreateRequestDto, { rejectWithValue }) => {
     try {
       const token = `${ls.get("access_token", { decrypt: true })}`;
-      console.log("token",token)
+      console.log("token", token)
       HttpService.setToken(token);
 
       const response = await requestService.create(dto);
@@ -100,7 +101,7 @@ export const updateRequestAsync = createAsyncThunk(
 
       const response = await requestService.update(id, data);
 
-      if (!response?.message) {
+      if (response.message === "Request status updated") {
         return rejectWithValue(response.message || "Failed to update request");
       }
 
@@ -127,12 +128,15 @@ export const updateRequestStatusAsync = createAsyncThunk(
       HttpService.setToken(token);
 
       const response = await requestService.updateStatus(id, status);
+      console.log("response at 131", response)
 
-      if (!response?.message) {
-        return rejectWithValue(response.message || "Failed to update status");
+      if (response.data.message === "Request status updated") {
+        console.log("4sucess running")
+        Toast.fire({ icon: "success", title: response.data.message as string });
+        return response.request || response.data.request;
+      } else {
+        Toast.fire({ icon: "error", title: response.data.message as string });
       }
-
-      return response.request || response.data;
     } catch (error: any) {
       return rejectWithValue(
         error?.response?.data?.message || "Failed to update request status"

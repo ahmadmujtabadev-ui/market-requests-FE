@@ -43,7 +43,7 @@ const COMMERCIAL_CATEGORIES = [
 export default function TemplateLibraryPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { items: templates, isLoading, error } = useSelector(selectTemplates);
+  const { items: templates, isLoading } = useSelector(selectTemplates);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<TemplateType>('residential');
   const [selectedCategory, setSelectedCategory] = useState('All');

@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { dashboardService, DashboardStats } from "./endpoint";
-import { HttpService } from "../index";
 // import ls if you need token from localstorage
 
 type Reject = string;

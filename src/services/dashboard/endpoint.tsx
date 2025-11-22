@@ -1,12 +1,5 @@
 // dashboard/endpoint.ts
 import { HttpService } from "../index";
-export interface ApiEnvelope<T> {
-  success: boolean;
-  message?: string;
-  data: T;
-  status?: number;
-}
-
 
 export interface DashboardOverview {
   totalRequests: number;
@@ -39,8 +32,13 @@ export interface DashboardStats {
   recentRequests: RecentRequest[];
 }
 
-// If your backend returns: { success, message, data: { overview, statusBreakdown, recentRequests } }
-export type DashboardStatsResponse = ApiEnvelope<DashboardStats>;
+// Fix: Use 'stats' instead of 'data' to match actual API response
+export interface DashboardStatsResponse {
+  success: boolean;
+  message?: string;
+  stats: DashboardStats;
+  status?: number;
+}
 
 class DashboardService extends HttpService {
   private readonly base = "user";

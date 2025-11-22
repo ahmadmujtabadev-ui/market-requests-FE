@@ -142,19 +142,34 @@ export const templateSlice = createSlice({
       .addCase(deleteTemplateAsync.pending, (state) => {
         state.isLoading = true;
       })
-      .addCase(
-        deleteTemplateAsync.fulfilled,
-        (state, action: PayloadAction<{ id: string }>) => {
-          state.isLoading = false;
-          state.items = state.items.filter(
-            (item) => item.id !== action.payload.id
-          );
-          if (state.selectedTemplate?.id === action.payload.id) {
-            state.selectedTemplate = null;
-          }
-          Toast.fire({ icon: "success", title: "Template deleted successfully" });
+      // .addCase(
+      //   deleteTemplateAsync.fulfilled,
+      //   (state, action: PayloadAction<{ id: string }>) => {
+      //     state.isLoading = false;
+      //     state.items = state.items.filter(
+      //       (item) => item.id !== action.payload.id
+      //     );
+      //     if (state.selectedTemplate?.id === action.payload.id) {
+      //       state.selectedTemplate = null;
+      //     }
+      //     Toast.fire({ icon: "success", title: "Template deleted successfully" });
+      //   }
+      // )
+      .addCase(deleteTemplateAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+
+        const id = action.payload?.id; // payload might be undefined
+        if (!id) return;
+
+        state.items = state.items.filter((item) => item.id !== id);
+
+        if (state.selectedTemplate?.id === id) {
+          state.selectedTemplate = null;
         }
-      )
+
+        Toast.fire({ icon: 'success', title: 'Template deleted successfully' });
+      })
+
       .addCase(deleteTemplateAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) ?? "Failed to delete template";
