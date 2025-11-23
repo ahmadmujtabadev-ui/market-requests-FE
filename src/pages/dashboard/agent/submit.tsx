@@ -150,7 +150,7 @@ export default function SubmitRequestPage() {
         fileUrls: fileUrls.filter(Boolean),
       };
       await dispatch(createRequestAsync(requestData)).unwrap();
-      router.push('/dashboard/agent/requests')
+      router.push('/dashboard/agent/overview')
 
     } catch (err: any) {
       setError(err?.message || 'Failed to submit request. Please try again.');
