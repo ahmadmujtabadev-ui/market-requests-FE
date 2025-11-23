@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Formik, Form } from 'formik';
 import { useAppDispatch } from '@/hooks/hooks';
