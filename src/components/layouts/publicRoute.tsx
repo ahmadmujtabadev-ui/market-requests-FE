@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 import ls from 'localstorage-slim';
@@ -15,7 +15,6 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({
 }) => {
   const router = useRouter();
   const { profile } = useSelector(selectUser);
-  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -25,7 +24,6 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({
         return;
       }
       
-      setIsChecking(false);
     };
 
     checkAuth();
