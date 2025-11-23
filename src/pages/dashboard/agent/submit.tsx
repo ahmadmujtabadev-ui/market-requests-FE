@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useReducer } from 'react';
 import { Upload, X, FileText, Image, Film} from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { DashboardLayout } from '@/components/layouts';
@@ -9,6 +9,7 @@ import { createRequestAsync } from '@/services/request/asyncThunk';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { selectTemplateItems, selectTemplateLoading } from '@/redux/slices/templateSlice';
 import { selectRequestLoading } from '@/redux/slices/requestSlice';
+import { useRouter } from 'next/router';
 
 type UploadedFile = {
   id: string;
@@ -21,6 +22,7 @@ type UploadedFile = {
 
 export default function SubmitRequestPage() {
   const dispatch = useAppDispatch();
+  const router = useRouter()
   const templates = useAppSelector(selectTemplateItems);
     console.log("template", templates)
   const isLoadingTemplates = useAppSelector(selectTemplateLoading);
@@ -131,7 +133,7 @@ export default function SubmitRequestPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isFormValid || isSubmitting) return;
+    // if (isFormValid || isSubmitting) return;
     setError(null);
     try {
       const finalPlatforms = platforms.includes('Other')
@@ -148,6 +150,7 @@ export default function SubmitRequestPage() {
         fileUrls: fileUrls.filter(Boolean),
       };
       await dispatch(createRequestAsync(requestData)).unwrap();
+      router.push('/dashboard/agent/requests')
 
     } catch (err: any) {
       setError(err?.message || 'Failed to submit request. Please try again.');
