@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useEffect, useState, useCallback, useReducer } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Upload, X, FileText, Image, Film} from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { DashboardLayout } from '@/components/layouts';
