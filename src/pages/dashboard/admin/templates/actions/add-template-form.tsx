@@ -1,60 +1,90 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Upload, X, FileText, Building2, Save } from 'lucide-react';
-import { DashboardLayout } from '@/components/layouts';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { useAppDispatch } from '@/hooks/hooks';
-import { useRouter } from 'next/router';
-import { createTemplateAsync, updateTemplateAsync } from '@/services/template/asyncThunk';
-import { LoadingOverlay } from '@/components/loaders/overlayloader';
+import React, { useEffect, useState } from "react";
+import { ArrowLeft, Upload, X, FileText, Building2, Save } from "lucide-react";
+import { DashboardLayout } from "@/components/layouts";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { useAppDispatch } from "@/hooks/hooks";
+import { useRouter } from "next/router";
+import { createTemplateAsync, updateTemplateAsync } from "@/services/template/asyncThunk";
+import { LoadingOverlay } from "@/components/loaders/overlayloader";
 
 const RESIDENTIAL_CATEGORIES = [
-  'Guides',
-  'Property Brochures',
-  'Just Listed',
-  'Coming Soon',
-  'Open House',
-  'Just Sold',
-  'Price Improvement',
-  'Under Contract',
-  'Market Updates',
-  'Testimonials',
-  'Instagram Posts',
-  'Instagram Stories',
-  'Highlight Covers',
-  'Flyers',
+  "Guides",
+  "Seller Guide",
+  "Property Brochures",
+  "12 Months Newsletter",
+  "Pre-Listing Checklist",
+  "Vendor List",
+  "Postcard (6*4 inch)",
+  "Postcard (6*4 inch) Congratulations",
+  "Postcard (6*4 inch) Holiday",
+  "Postcard (6*4 inch) Just Listed",
+  "Postcard (6*4 inch) Sold",
+  "Postcard (6*4 inch) Maintenence",
+  "Postcard (6*4 inch) Under Contract",
+  "Postcard (6*4 inch) General",
+  "Postcard (6*4 inch) Intro",
+  "Postcard (6*4 inch) Open House",
+  "Postcard (7*5 inch)",
+  "Postcard (7*5 inch) Congratulations",
+  "Postcard (7*5 inch) Holiday",
+  "Postcard (7*5 inch) Just Listed",
+  "Postcard (7*5 inch) Sold",
+  "Postcard (7*5 inch) Maintenence",
+  "Postcard (7*5 inch) Under Contract",
+  "Postcard (7*5 inch) General",
+  "Postcard (7*5 inch) Intro",
+  "Postcard (7*5 inch) Open House",
+  "Instagram Posts (1080*1080)",
+  "Instagram Posts (1080*1080) About us",
+  "Instagram Posts (1080*1080) General",
+  "Instagram Posts (1080*1080) Tips",
+  "Instagram Posts (1080*1080) Discover",
+  "Instagram Posts (1080*1080) Q&A",
+  "Instagram Posts (1080*1080) Listing",
+  "Instagram Posts (1080*1080) Marketing Updates",
+  "Instagram Posts (1080*1080) Open House",
+  "Instagram Posts (1080*1080) Testominal",
+  "Instagram Stories (1080*1920)",
+  "Instagram Stories (1080*1920) General",
+  "Instagram Stories (1080*1920) Discover",
+  "Instagram Stories (1080*1920) Listing",
+  "Instagram Stories (1080*1920) Marketing Updates",
+  "Instagram Stories (1080*1920) Open House",
+  "Instagram Stories (1080*1920) Testominal",
+  "Flyers",
 ];
 
 const COMMERCIAL_CATEGORIES = [
-  'For Sale',
-  'For Lease',
-  'Sold/Leased',
-  'Price Adjustment',
-  'Project Announcements',
-  'Market Reports',
-  'Property Highlights',
-  'Broker Branding',
+  "For Sale",
+  "For Lease",
+  "Sold/Leased",
+  "Price Adjustment",
+  "Project Announcements",
+  "Market Reports",
+  "Property Highlights",
+  "Broker Branding",
 ];
 
 interface FormValues {
   title: string;
-  type: 'residential' | 'commercial';
+  type: "residential" | "commercial";
   category: string;
   canvaUrl: string;
-  previewFile: File | null;
+  previewFiles: File[];
 }
 
 interface Template {
   id: string;
   title: string;
-  type: 'residential' | 'commercial';
+  type: "residential" | "commercial";
   category: string;
   canvaUrl: string;
-  previewUrl?: string;      // <— match backend
+  previewUrl?: string;
 }
 
 interface AddTemplateFormProps {
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   templateId?: string;
   initialTemplate?: Template | null;
 }
@@ -65,63 +95,59 @@ export default function AddTemplateForm({
   initialTemplate,
 }: AddTemplateFormProps) {
   const dispatch = useAppDispatch();
-  const [previewImage, setPreviewImage] = useState<string>('');
   const router = useRouter();
-  console.log("initial 70",initialTemplate)
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const isEdit = mode === "edit";
 
   const validationSchema = Yup.object({
-    title: Yup.string()
-      .required('Template title is required')
-      .trim()
-      .min(3, 'Title must be at least 3 characters'),
-    category: Yup.string().required('Category is required'),
+    title: Yup.string().required("Template title is required").trim().min(3, "Title must be at least 3 characters"),
+    category: Yup.string().required("Category is required"),
     canvaUrl: Yup.string()
-      .required('Canva URL is required')
-      .url('Please enter a valid URL')
-      .matches(/^https?:\/\//, 'URL must start with http:// or https://'),
+      .required("Canva URL is required")
+      .url("Please enter a valid URL")
+      .matches(/^https?:\/\//, "URL must start with http:// or https://"),
+    previewFiles: Yup.array().of(Yup.mixed<File>()).min(1, "Please select at least one image"),
   });
 
   const formik = useFormik<FormValues>({
     initialValues: {
-      title: '',
-      type: 'residential',
-      category: '',
-      canvaUrl: '',
-      previewFile: null,
+      title: "",
+      type: "residential",
+      category: "",
+      canvaUrl: "",
+      previewFiles: [],
     },
     enableReinitialize: true,
     validationSchema,
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        console.log("values", values)
-        const formData = new FormData();
-        formData.append('title', values.title.trim());
-        formData.append('type', values.type);
-        formData.append('category', values.category);
-        formData.append('canvaUrl', values.canvaUrl);
-
-        if (values.previewFile) {
-          formData.append('previewUrl', values.previewFile);
-        }
-
-        if (mode === 'edit' && templateId) {
-          await dispatch(
-            updateTemplateAsync({ id: templateId, data: formData })
-          ).unwrap();
-          router.push('/dashboard/admin/templates/template');
-
+        if (isEdit && templateId) {
+          const fd = new FormData();
+          fd.append("title", values.title.trim());
+          fd.append("type", values.type);
+          fd.append("category", values.category);
+          fd.append("canvaUrl", values.canvaUrl);
+          const firstFile = values.previewFiles[0];
+          if (firstFile) {
+            fd.append("previewUrl", firstFile);
+          }
+          await dispatch(updateTemplateAsync({ id: templateId, data: fd })).unwrap();
         } else {
-          await dispatch(createTemplateAsync(formData)).unwrap();
-          router.push('/dashboard/admin/templates/template');
+          const files = values.previewFiles;
+          if (!files.length) throw new Error("No files selected");
+          const fd = new FormData();
+          fd.append("titlePrefix", values.title.trim());
+          fd.append("type", values.type);
+          fd.append("category", values.category);
+          fd.append("canvaUrl", values.canvaUrl);
+          files.forEach((file) => {
+            fd.append("previewUrl", file);
+          });
+          await dispatch(createTemplateAsync(fd)).unwrap();
         }
-
+        router.push("/dashboard/admin/templates/template");
       } catch (error) {
-        console.error(
-          mode === 'edit'
-            ? 'Failed to update template:'
-            : 'Failed to create template:',
-          error
-        );
+        console.error(isEdit ? "Failed to update template:" : "Failed to create templates:", error);
       } finally {
         setSubmitting(false);
       }
@@ -129,74 +155,62 @@ export default function AddTemplateForm({
   });
 
   useEffect(() => {
-    if (mode === 'edit' && initialTemplate) {
+    if (isEdit && initialTemplate) {
       formik.setValues({
-        title: initialTemplate.title || '',
-        type: initialTemplate.type || 'residential',
-        category: initialTemplate.category || '',
-        canvaUrl: initialTemplate.canvaUrl || '',
-        previewFile: null,
+        title: initialTemplate.title || "",
+        type: initialTemplate.type || "residential",
+        category: initialTemplate.category || "",
+        canvaUrl: initialTemplate.canvaUrl || "",
+        previewFiles: [],
       });
-
       if (initialTemplate.previewUrl) {
-        setPreviewImage(initialTemplate.previewUrl);
+        setPreviewImages([initialTemplate.previewUrl]);
       }
     }
-  }, [mode, initialTemplate]);
+  }, [isEdit, initialTemplate]);
 
   const categories =
-    formik.values.type === 'residential'
-      ? RESIDENTIAL_CATEGORIES
-      : COMMERCIAL_CATEGORIES;
+    formik.values.type === "residential" ? RESIDENTIAL_CATEGORIES : COMMERCIAL_CATEGORIES;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    if (file) {
-      formik.setFieldValue('previewFile', file);
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    const fileList = Array.from(event.target.files || []);
+    formik.setFieldValue("previewFiles", fileList);
+    const readers: Promise<string>[] = fileList.slice(0, 4).map(
+      (file) =>
+        new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        })
+    );
+    Promise.all(readers).then((urls) => setPreviewImages(urls));
   };
 
   const removePreview = () => {
-    formik.setFieldValue('previewFile', null);
-    setPreviewImage('');
+    formik.setFieldValue("previewFiles", []);
+    setPreviewImages([]);
   };
 
-  const handleTypeChange = (type: 'residential' | 'commercial') => {
-    formik.setFieldValue('type', type);
-    formik.setFieldValue('category', '');
+  const handleTypeChange = (type: "residential" | "commercial") => {
+    formik.setFieldValue("type", type);
+    formik.setFieldValue("category", "");
   };
 
   const handleBack = () => {
-    router.push('/dashboard/admin/templates/template');
+    router.push("/dashboard/admin/templates/template");
   };
-
-  const isEdit = mode === 'edit';
 
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-[#EEEEEE]">
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=Roboto:wght@100;300;400;500;700;900&display=swap');
-          
-          .font-manrope {
-            font-family: 'Manrope', sans-serif;
-          }
-          
-          .font-roboto {
-            font-family: 'Roboto', sans-serif;
-          }
+          .font-manrope { font-family: 'Manrope', sans-serif; }
+          .font-roboto { font-family: 'Roboto', sans-serif; }
         `}</style>
 
         <div className="p-6 lg:p-8">
           <div className="w-full mx-auto">
-            {/* Header */}
             <div className="mb-8">
               <button
                 onClick={handleBack}
@@ -212,21 +226,20 @@ export default function AddTemplateForm({
                 className="text-3xl text-black font-manrope mb-2"
                 style={{ fontWeight: 800 }}
               >
-                {isEdit ? 'Edit Template' : 'Add New Template'}
+                {isEdit ? "Edit Template" : "Add New Template"}
               </h1>
               <p
                 className="text-base text-[#595959] font-roboto"
                 style={{ fontWeight: 400 }}
               >
                 {isEdit
-                  ? 'Update this marketing template for agents'
-                  : 'Create a new marketing template for agents'}
+                  ? "Update this marketing template for agents"
+                  : "Create one or more marketing templates for agents"}
               </p>
             </div>
 
             <form onSubmit={formik.handleSubmit}>
               <div className="bg-white rounded-lg border border-[#EEEEEE] p-6 mb-6">
-                {/* Template Type */}
                 <div className="mb-6">
                   <label
                     className="block text-sm text-black font-manrope mb-3"
@@ -237,10 +250,10 @@ export default function AddTemplateForm({
                   <div className="inline-flex rounded-lg bg-[#EEEEEE] p-1">
                     <button
                       type="button"
-                      onClick={() => handleTypeChange('residential')}
-                      className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${formik.values.type === 'residential'
-                        ? 'bg-black text-white shadow-sm'
-                        : 'text-[#595959] hover:text-black'
+                      onClick={() => handleTypeChange("residential")}
+                      className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${formik.values.type === "residential"
+                        ? "bg-black text-white shadow-sm"
+                        : "text-[#595959] hover:text-black"
                         }`}
                       style={{ fontWeight: 700 }}
                     >
@@ -249,10 +262,10 @@ export default function AddTemplateForm({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleTypeChange('commercial')}
-                      className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${formik.values.type === 'commercial'
-                        ? 'bg-black text-white shadow-sm'
-                        : 'text-[#595959] hover:text-black'
+                      onClick={() => handleTypeChange("commercial")}
+                      className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${formik.values.type === "commercial"
+                        ? "bg-black text-white shadow-sm"
+                        : "text-[#595959] hover:text-black"
                         }`}
                       style={{ fontWeight: 700 }}
                     >
@@ -277,10 +290,10 @@ export default function AddTemplateForm({
                     value={formik.values.title}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    placeholder="Enter template title"
+                    placeholder="Base title for this batch"
                     className={`w-full px-4 py-3 border rounded-lg text-sm font-roboto focus:outline-none focus:ring-2 focus:ring-black/10 ${formik.touched.title && formik.errors.title
-                      ? 'border-red-500'
-                      : 'border-[#EEEEEE]'
+                      ? "border-red-500"
+                      : "border-[#EEEEEE]"
                       }`}
                     style={{ fontWeight: 400 }}
                   />
@@ -309,8 +322,8 @@ export default function AddTemplateForm({
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                     className={`w-full px-4 py-3 border rounded-lg text-sm font-roboto appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-black/10 ${formik.touched.category && formik.errors.category
-                      ? 'border-red-500'
-                      : 'border-[#EEEEEE]'
+                      ? "border-red-500"
+                      : "border-[#EEEEEE]"
                       }`}
                     style={{ fontWeight: 400 }}
                   >
@@ -348,8 +361,8 @@ export default function AddTemplateForm({
                     onBlur={formik.handleBlur}
                     placeholder="https://www.canva.com/design/..."
                     className={`w-full px-4 py-3 border rounded-lg text-sm font-roboto focus:outline-none focus:ring-2 focus:ring-black/10 ${formik.touched.canvaUrl && formik.errors.canvaUrl
-                      ? 'border-red-500'
-                      : 'border-[#EEEEEE]'
+                      ? "border-red-500"
+                      : "border-[#EEEEEE]"
                       }`}
                     style={{ fontWeight: 400 }}
                   />
@@ -374,20 +387,22 @@ export default function AddTemplateForm({
                     className="block text-sm text-black font-manrope mb-2"
                     style={{ fontWeight: 700 }}
                   >
-                    Preview Image *
+                    Preview Images *
                   </label>
 
-                  {!previewImage ? (
+                  {!previewImages.length ? (
                     <div
-                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-[#EEEEEE]/50 transition-colors ${formik.touched.previewFile && formik.errors.previewFile
-                        ? 'border-red-500'
-                        : 'border-[#EEEEEE]'
+                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-[#EEEEEE]/50 transition-colors ${formik.touched.previewFiles && formik.errors.previewFiles
+                        ? "border-red-500"
+                        : "border-[#EEEEEE]"
                         }`}
                     >
                       <input
                         type="file"
                         id="preview"
+                        name="previewUrl"
                         accept="image/*"
+                        multiple
                         onChange={handleFileChange}
                         onBlur={formik.handleBlur}
                         className="hidden"
@@ -398,13 +413,13 @@ export default function AddTemplateForm({
                           className="text-sm text-black font-roboto mb-1"
                           style={{ fontWeight: 500 }}
                         >
-                          Click to upload preview image
+                          Click to upload one or more images
                         </p>
                         <p
                           className="text-xs text-[#595959] font-roboto"
                           style={{ fontWeight: 400 }}
                         >
-                          PNG, JPG up to 5MB
+                          PNG, JPG up to 5MB each
                         </p>
                       </label>
                     </div>
@@ -417,20 +432,41 @@ export default function AddTemplateForm({
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      <img
-                        src={previewImage}
-                        alt="Preview"
-                        className="w-full h-64 object-cover rounded-lg"
-                      />
+
+                      <div className="flex items-center gap-4">
+                        {previewImages[0] && (
+                          <img
+                            src={previewImages[0]}
+                            alt="Preview"
+                            className="w-40 h-40 object-cover rounded-lg"
+                          />
+                        )}
+                        <div>
+                          <p
+                            className="text-sm font-roboto text-black mb-1"
+                            style={{ fontWeight: 500 }}
+                          >
+                            {formik.values.previewFiles.length} image
+                            {formik.values.previewFiles.length > 1 ? "s" : ""} selected
+                          </p>
+                          <p
+                            className="text-xs text-[#595959] font-roboto"
+                            style={{ fontWeight: 400 }}
+                          >
+                            Only the first image is shown here. All selected images will
+                            be uploaded and one template will be created per image.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  {formik.touched.previewFile && formik.errors.previewFile && (
+                  {formik.touched.previewFiles && formik.errors.previewFiles && (
                     <p
                       className="text-sm text-red-600 font-roboto mt-1"
                       style={{ fontWeight: 400 }}
                     >
-                      {formik.errors.previewFile as string}
+                      {formik.errors.previewFiles as string}
                     </p>
                   )}
                 </div>
@@ -452,11 +488,11 @@ export default function AddTemplateForm({
                   style={{ fontWeight: 700 }}
                 >
                   {formik.isSubmitting ? (
-                      <LoadingOverlay isVisible />
+                    <LoadingOverlay isVisible />
                   ) : (
                     <>
                       <Save className="w-5 h-5" />
-                      {isEdit ? 'Update Template' : 'Create Template'}
+                      {isEdit ? "Update Template" : "Create Templates"}
                     </>
                   )}
                 </button>

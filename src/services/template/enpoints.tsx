@@ -51,7 +51,7 @@ class TemplateService extends HttpService {
     data: FormData, // or: any
     option = {}
   ): Promise<any> => {
-    return this.post(this.prefix, data, option);
+    return this.post(`${this.prefix}/bulk`, data, option);
   };
 
 
