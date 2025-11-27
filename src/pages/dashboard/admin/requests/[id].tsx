@@ -115,7 +115,7 @@ export default function AgentRequestDetailPage() {
                   Request not found
                 </h2>
                 <p className="text-sm text-[#595959] font-roboto mb-6" style={{ fontWeight: 400 }}>
-                  This request may have been deleted or you don't have access to it
+                  This request may have been deleted or you do not have access to it
                 </p>
                 <button
                   onClick={() => router.push('/dashboard/agent/requests')}

@@ -32,6 +32,7 @@ export default function SubmitRequestPage() {
   const [notes, setNotes] = useState('');
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
+  console.log(error)
   const [isDragging, setIsDragging] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [deadline, setDeadline] = useState('');

@@ -132,6 +132,7 @@ export default function VaRequestDetailPage() {
       // Refresh request data
       dispatch(fetchRequestByIdAsync(request.id));
     } catch (e: any) {
+        console.log(e)
     } finally {
       setStatusSaving(false);
     }

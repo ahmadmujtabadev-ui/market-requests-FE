@@ -11,8 +11,6 @@ import {
   CheckCircle,
   AlertCircle,
   ChevronDown,
-  Download,
-  Calendar,
   Sparkles,
   Bell,
   Package,

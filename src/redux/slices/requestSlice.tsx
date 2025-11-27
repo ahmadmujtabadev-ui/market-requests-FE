@@ -92,7 +92,7 @@ export const requestSlice = createSlice({
         state.isLoading = false;
         state.items = action.payload || [];
       })
-      .addCase(fetchRequestsAsync.rejected, (state, action) => {
+      .addCase(fetchRequestsAsync.rejected, (state) => {
         state.isLoading = false;
         // state.error = (action.payload as string) || "Failed to fetch requests";
       });
