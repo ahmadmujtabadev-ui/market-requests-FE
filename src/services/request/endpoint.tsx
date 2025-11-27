@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { HttpService } from "../index";
+import { HttpService } from '../index';
 
 /** Domain types */
 export type RequestStatus = 'new' | 'progress' | 'revision' | 'completed';
@@ -65,7 +65,7 @@ export interface ApiEnvelope<T> {
 }
 
 class RequestService extends HttpService {
-  private readonly prefix: string = "/request";
+  private readonly prefix: string = '/request';
 
   /**
    * List all requests (role-based filtering)
@@ -84,9 +84,27 @@ class RequestService extends HttpService {
   /**
    * Create new request (agent only)
    * POST /api/v1/requests
+   * Supports both JSON and multipart/form-data
    */
-  create = (data: CreateRequestDto, option = {}): Promise<any> =>
-    this.post(this.prefix, data, option);
+  create = (
+    data: CreateRequestDto | FormData,
+    option: any = {}
+  ): Promise<any> => {
+    const isFormData =
+      typeof FormData !== 'undefined' && data instanceof FormData;
+
+    const finalOptions = {
+      ...option,
+      ...(isFormData && {
+        headers: {
+          ...(option.headers || {}),
+          'Content-Type': 'multipart/form-data',
+        },
+      }),
+    };
+
+    return this.post(this.prefix, data, finalOptions);
+  };
 
   /**
    * Update request (agent can update their own)
@@ -99,15 +117,38 @@ class RequestService extends HttpService {
    * Update request status (VA/Admin only)
    * PUT /api/v1/requests/:id/status
    */
-  updateStatus = (id: string, status: RequestStatus, option = {}): Promise<any> =>
+  updateStatus = (
+    id: string,
+    status: RequestStatus,
+    option = {}
+  ): Promise<any> =>
     this.put(`${this.prefix}/${id}/status`, { status }, option);
 
   /**
    * Upload completed file (VA only)
    * POST /api/v1/requests/:id/files
+   * Accepts FormData with file and fileType
    */
-  uploadFile = (id: string, fileUrl: string, fileType: string = 'va_completed', option = {}): Promise<any> =>
-    this.post(`${this.prefix}/${id}/files`, { fileUrl, fileType }, option);
+  uploadFile = (
+    id: string,
+    data: FormData | { fileUrl: string; fileType?: string },
+    option: any = {}
+  ): Promise<any> => {
+    const isFormData =
+      typeof FormData !== 'undefined' && data instanceof FormData;
+
+    const finalOptions = {
+      ...option,
+      ...(isFormData && {
+        headers: {
+          ...(option.headers || {}),
+          'Content-Type': 'multipart/form-data',
+        },
+      }),
+    };
+
+    return this.post(`${this.prefix}/${id}/files`, data, finalOptions);
+  };
 
   /**
    * Delete file
@@ -120,8 +161,7 @@ class RequestService extends HttpService {
    * Get request statistics
    * GET /api/v1/requests/stats
    */
-  getStats = (): Promise<any> =>
-    this.get(`${this.prefix}/stats`, {});
+  getStats = (): Promise<any> => this.get(`${this.prefix}/stats`, {});
 }
 
 export const requestService = new RequestService();

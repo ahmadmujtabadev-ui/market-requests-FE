@@ -9,20 +9,14 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Download,
   ChevronDown,
   Calendar,
-  X,
-  Loader2,
-  UploadCloud, // NEW
+  Eye,
 } from 'lucide-react';
+import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch } from '@/redux/store';
-import {
-  fetchRequestsAsync,
-  updateRequestStatusAsync,
-  uploadCompletedFileAsync,
-} from '@/services/request/asyncThunk';
+import { fetchRequestsAsync } from '@/services/request/asyncThunk';
 import type { Request, RequestStatus } from '@/services/request/endpoint';
 import { selectRequests } from '@/redux/slices/requestSlice';
 
@@ -178,541 +172,12 @@ function RequestCard({
           )}
         </div>
         <button
-          className="text-sm text-black font-manrope opacity-0 group-hover:opacity-100 transition-opacity"
+          className="text-sm text-black font-manrope opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
           style={{ fontWeight: 700 }}
         >
-          View Details →
+          <Eye className="w-4 h-4" />
+          View Details
         </button>
-      </div>
-    </div>
-  );
-}
-
-// --- Detail modal for VA (update status + upload completed file) ---
-
-interface RequestDetailModalProps {
-  request: Request | null;
-  onClose: () => void;
-  onUpdateStatus: (id: string, status: RequestStatus) => Promise<void>;
-  onUploadCompletedFile: (id: string, url: string) => Promise<void>;
-}
-
-function RequestDetailModal({
-  request,
-  onClose,
-  onUpdateStatus,
-  onUploadCompletedFile,
-}: RequestDetailModalProps) {
-  const [localStatus, setLocalStatus] = useState<RequestStatus | null>(null);
-  const [statusSaving, setStatusSaving] = useState(false);
-
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // NEW: local file + drag state
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-
-  React.useEffect(() => {
-    if (request) {
-      setLocalStatus(request.status);
-      setSelectedFile(null);
-      setError(null);
-    }
-  }, [request]);
-
-  if (!request) return null;
-
-  const agentFiles =
-    request.files?.filter((f) => f.fileType === 'agent_upload') || [];
-  const completedFiles =
-    request.files?.filter((f) => f.fileType === 'va_completed') || [];
-
-  const getFileName = (url: string) => {
-    try {
-      return url.split('/').pop() || 'file';
-    } catch {
-      return 'file';
-    }
-  };
-
-  const handleStatusSave = async () => {
-    if (!localStatus || localStatus === request.status) return;
-    setStatusSaving(true);
-    setError(null);
-    try {
-      await onUpdateStatus(request.id, localStatus);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to update status');
-    } finally {
-      setStatusSaving(false);
-    }
-  };
-
-  // -------- UPLOAD HELPERS --------
-
-  // TODO: replace with real upload (S3, Cloudinary, etc.)
-  async function uploadFileAndGetUrl(file: File): Promise<string> {
-    // TEMP: local blob URL; works only for demo
-    return URL.createObjectURL(file);
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  const handleUploadFile = async () => {
-    if (!selectedFile) return;
-    setUploading(true);
-    setError(null);
-    try {
-      const url = await uploadFileAndGetUrl(selectedFile);
-      await onUploadCompletedFile(request.id, url);
-      setSelectedFile(null);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to upload file');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // --------------------------------
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-[#EEEEEE] p-6 flex items-start justify-between">
-          <div className="flex-1 mr-4">
-            <h2
-              className="text-2xl text-black font-manrope mb-2"
-              style={{ fontWeight: 800 }}
-            >
-              {request?.projectTitle}
-            </h2>
-            <div className="flex items-center gap-2">
-              {request?.template && (
-                <>
-                  <span
-                    className="text-sm text-[#595959] font-roboto"
-                    style={{ fontWeight: 400 }}
-                  >
-                    {request?.template?.category}
-                  </span>
-                  <span className="text-[#595959]">•</span>
-                </>
-              )}
-              <span
-                className="text-sm text-[#595959] font-roboto"
-                style={{ fontWeight: 400 }}
-              >
-                Request ID: {request?.id}
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-[#EEEEEE] rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-[#595959]" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Status + Flow */}
-          <div>
-            <label
-              className="block text-sm text-black font-manrope mb-2"
-              style={{ fontWeight: 700 }}
-            >
-              Status
-            </label>
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-2">
-                {STATUS_ORDER.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setLocalStatus(s)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-manrope border ${
-                      localStatus === s
-                        ? 'bg-black text-white border-black'
-                        : 'bg-[#EEEEEE] text-[#595959] border-transparent hover:border-black/30'
-                    }`}
-                    style={{ fontWeight: 700 }}
-                  >
-                    {STATUS_CONFIG[s].label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleStatusSave}
-                  disabled={
-                    statusSaving || !localStatus || localStatus === request.status
-                  }
-                  className={`inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-manrope border-2 border-black ${
-                    statusSaving ||
-                    !localStatus ||
-                    localStatus === request.status
-                      ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed'
-                      : 'bg-black text-white hover:bg-[#595959]'
-                  } transition-colors`}
-                  style={{ fontWeight: 700 }}
-                >
-                  {statusSaving && (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  )}
-                  Save Status
-                </button>
-                <StatusBadge status={request.status} />
-              </div>
-            </div>
-          </div>
-
-          {/* Template */}
-          {request.template && (
-            <div>
-              <label
-                className="block text-sm text-black font-manrope mb-2"
-                style={{ fontWeight: 700 }}
-              >
-                Template Used
-              </label>
-              <div className="p-4 bg-[#EEEEEE] rounded-lg">
-                <p
-                  className="text-sm text-black font-roboto"
-                  style={{ fontWeight: 500 }}
-                >
-                  {request.template.title}
-                </p>
-                <p
-                  className="text-xs text-[#595959] font-roboto mt-1"
-                  style={{ fontWeight: 400 }}
-                >
-                  Category: {request.template.category}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Deadline */}
-          <div>
-            <label
-              className="block text-sm text-black font-manrope mb-2"
-              style={{ fontWeight: 700 }}
-            >
-              Deadline
-            </label>
-            <div className="p-4 bg-[#EEEEEE] rounded-lg">
-              <p
-                className="text-sm text-black font-roboto"
-                style={{ fontWeight: 500 }}
-              >
-                {new Date(request.deadline).toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          {/* Platforms */}
-          {request.platforms && request.platforms.length > 0 && (
-            <div>
-              <label
-                className="block text-sm text-black font-manrope mb-2"
-                style={{ fontWeight: 700 }}
-              >
-                Platforms
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {request.platforms.map((platform, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1.5 bg-[#EEEEEE] text-[#595959] rounded-full text-xs font-roboto"
-                    style={{ fontWeight: 500 }}
-                  >
-                    {platform}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Dimensions */}
-          {request.dimensions && (
-            <div>
-              <label
-                className="block text-sm text-black font-manrope mb-2"
-                style={{ fontWeight: 700 }}
-              >
-                Dimensions
-              </label>
-              <div className="p-4 bg-[#EEEEEE] rounded-lg">
-                <p
-                  className="text-sm text-black font-roboto"
-                  style={{ fontWeight: 500 }}
-                >
-                  {request.dimensions}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Notes */}
-          {request.notes && (
-            <div>
-              <label
-                className="block text-sm text-black font-manrope mb-2"
-                style={{ fontWeight: 700 }}
-              >
-                Instructions / Notes
-              </label>
-              <div className="p-4 bg-[#EEEEEE] rounded-lg">
-                <p
-                  className="text-sm text-[#595959] font-roboto whitespace-pre-wrap"
-                  style={{ fontWeight: 400 }}
-                >
-                  {request.notes}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Agent Uploaded Files */}
-          {agentFiles.length > 0 && (
-            <div>
-              <label
-                className="block text-sm text-black font-manrope mb-2"
-                style={{ fontWeight: 700 }}
-              >
-                Agent Files ({agentFiles.length})
-              </label>
-              <div className="space-y-2">
-                {agentFiles.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex items-center justify-between p-3 bg-[#EEEEEE] rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-5 h-5 text-[#595959]" />
-                      <span
-                        className="text-sm text-black font-roboto"
-                        style={{ fontWeight: 400 }}
-                      >
-                        {getFileName(file.fileUrl)}
-                      </span>
-                    </div>
-                    <a
-                      href={file.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 hover:bg-white rounded-lg transition-colors"
-                    >
-                      <Download className="w-4 h-4 text-[#595959]" />
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Completed Files */}
-          {completedFiles.length > 0 && (
-            <div>
-              <label
-                className="block text-sm text-black font-manrope mb-2"
-                style={{ fontWeight: 700 }}
-              >
-                Completed Files ({completedFiles.length})
-              </label>
-              <div className="space-y-2">
-                {completedFiles.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex items-center justify-between p-3 bg-black text-white rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5" />
-                      <span
-                        className="text-sm font-roboto"
-                        style={{ fontWeight: 400 }}
-                      >
-                        {getFileName(file.fileUrl)}
-                      </span>
-                    </div>
-                    <a
-                      href={file.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 hover:bg-[#595959] rounded-lg transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Upload Completed File – Drag & Drop */}
-          <div>
-            <label
-              className="block text-sm text-black font-manrope mb-2"
-              style={{ fontWeight: 700 }}
-            >
-              Upload Completed File
-            </label>
-
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`mt-1 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                dragActive
-                  ? 'border-black bg-[#FAFAFA]'
-                  : 'border-[#EEEEEE] bg-white hover:border-black/40'
-              }`}
-            >
-              <input
-                id="completed-file-input"
-                type="file"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-
-              <label htmlFor="completed-file-input" className="block cursor-pointer">
-                <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-[#EEEEEE] flex items-center justify-center">
-                  <UploadCloud className="w-6 h-6 text-[#595959]" />
-                </div>
-
-                <p
-                  className="text-sm text-black font-manrope"
-                  style={{ fontWeight: 700 }}
-                >
-                  Drag and drop your completed file
-                </p>
-                <p
-                  className="text-xs text-[#595959] font-roboto mt-1"
-                  style={{ fontWeight: 400 }}
-                >
-                  or click to browse and select files
-                </p>
-
-                <p
-                  className="mt-3 text-xs text-[#595959] font-roboto"
-                  style={{ fontWeight: 400 }}
-                >
-                  Supported formats: PDF, DOCX, PNG, JPG, MP4
-                  <br />
-                  Maximum file size: 30MB
-                </p>
-              </label>
-            </div>
-
-            {selectedFile && (
-              <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <div className="flex items-center gap-2 text-sm font-roboto text-[#595959]">
-                  <FileText className="w-4 h-4" />
-                  <span className="truncate max-w-[220px] sm:max-w-[260px]">
-                    {selectedFile.name}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleUploadFile}
-                  disabled={uploading}
-                  className={`inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-manrope border-2 border-black ${
-                    uploading
-                      ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed'
-                      : 'bg-black text-white hover:bg-[#595959]'
-                  } transition-colors`}
-                  style={{ fontWeight: 700 }}
-                >
-                  {uploading && (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  )}
-                  Upload Completed File
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Timestamps */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label
-                className="block text-xs text-[#595959] font-roboto mb-1"
-                style={{ fontWeight: 400 }}
-              >
-                Created
-              </label>
-              <p
-                className="text-sm text-black font-roboto"
-                style={{ fontWeight: 500 }}
-              >
-                {new Date(request.createdAt).toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <label
-                className="block text-xs text-[#595959] font-roboto mb-1"
-                style={{ fontWeight: 400 }}
-              >
-                Last Updated
-              </label>
-              <p
-                className="text-sm text-black font-roboto"
-                style={{ fontWeight: 500 }}
-              >
-                {new Date(request.updatedAt).toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-xs text-red-700 font-roboto">{error}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] p-6 flex justify-end">
-          <button
-            onClick={onClose}
-            className="bg-white border-2 border-black text-black px-4 py-3 rounded-lg font-manrope hover:bg-[#EEEEEE] transition-colors"
-            style={{ fontWeight: 700 }}
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -721,12 +186,12 @@ function RequestDetailModal({
 // --- Main VA Work Queue Page ---
 
 export default function VaWorkQueuePage() {
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { items: requests, isLoading } = useSelector(selectRequests);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('all');
-  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
 
   useEffect(() => {
     dispatch(fetchRequestsAsync());
@@ -755,7 +220,7 @@ export default function VaWorkQueuePage() {
         STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status);
       if (statusDiff !== 0) return statusDiff;
       return (
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     });
   }, [requests, searchQuery, statusFilter]);
@@ -769,16 +234,6 @@ export default function VaWorkQueuePage() {
       completed: requests?.filter((r) => r.status === 'completed').length || 0,
     };
   }, [requests]);
-
-  const handleUpdateStatus = async (id: string, status: RequestStatus) => {
-    await dispatch(updateRequestStatusAsync({ id, status }));
-  };
-
-  const handleUploadCompletedFile = async (id: string, url: string) => {
-    await dispatch(
-      uploadCompletedFileAsync({ id, fileUrl: url, fileType: 'va_completed' }),
-    );
-  };
 
   return (
     <DashboardLayout>
@@ -796,6 +251,60 @@ export default function VaWorkQueuePage() {
 
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
         <div className="w-full mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl text-black font-manrope mb-2" style={{ fontWeight: 800 }}>
+              VA Work Queue
+            </h1>
+            <p className="text-base text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+              Manage marketing requests and upload completed work
+            </p>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div className="bg-white rounded-lg border border-[#EEEEEE] p-4 hover:shadow-lg transition-shadow">
+              <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
+                Total
+              </p>
+              <p className="text-2xl text-black font-manrope" style={{ fontWeight: 800 }}>
+                {statusCounts.all}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg border border-[#EEEEEE] p-4 hover:shadow-lg transition-shadow">
+              <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
+                New
+              </p>
+              <p className="text-2xl text-black font-manrope" style={{ fontWeight: 800 }}>
+                {statusCounts.new}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg border border-[#EEEEEE] p-4 hover:shadow-lg transition-shadow">
+              <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
+                In Progress
+              </p>
+              <p className="text-2xl text-black font-manrope" style={{ fontWeight: 800 }}>
+                {statusCounts.progress}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg border border-[#EEEEEE] p-4 hover:shadow-lg transition-shadow">
+              <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
+                Revision
+              </p>
+              <p className="text-2xl text-black font-manrope" style={{ fontWeight: 800 }}>
+                {statusCounts.revision}
+              </p>
+            </div>
+            <div className="bg-black rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <p className="text-xs text-white/70 font-roboto mb-1" style={{ fontWeight: 400 }}>
+                Completed
+              </p>
+              <p className="text-2xl text-white font-manrope" style={{ fontWeight: 800 }}>
+                {statusCounts.completed}
+              </p>
+            </div>
+          </div>
+
           {/* Filters bar */}
           <div className="bg-white rounded-lg border border-[#EEEEEE] p-4 mb-6">
             <div className="flex flex-col lg:flex-row gap-4">
@@ -844,8 +353,8 @@ export default function VaWorkQueuePage() {
               className="text-sm text-[#595959] font-roboto"
               style={{ fontWeight: 400 }}
             >
-              VA Work Queue • Showing {filteredRequests.length} request
-              {filteredRequests.length !== 1 ? 's' : ''} sorted by status
+              Showing {filteredRequests.length} request
+              {filteredRequests.length !== 1 ? 's' : ''} • Sorted by status and date
             </p>
           </div>
 
@@ -876,8 +385,9 @@ export default function VaWorkQueuePage() {
                 className="text-sm text-[#595959] font-roboto"
                 style={{ fontWeight: 400 }}
               >
-                Try changing the status filter or ask the agent to submit new
-                work.
+                {searchQuery || statusFilter !== 'all'
+                  ? 'Try adjusting your filters'
+                  : 'New requests will appear here when agents submit them'}
               </p>
             </div>
           ) : (
@@ -886,20 +396,13 @@ export default function VaWorkQueuePage() {
                 <RequestCard
                   key={request.id}
                   request={request}
-                  onClick={() => setSelectedRequest(request)}
+                  onClick={() => router.push(`/dashboard/vs/requests/${request.id}`)}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
-
-      <RequestDetailModal
-        request={selectedRequest}
-        onClose={() => setSelectedRequest(null)}
-        onUpdateStatus={handleUpdateStatus}
-        onUploadCompletedFile={handleUploadCompletedFile}
-      />
     </DashboardLayout>
   );
 }

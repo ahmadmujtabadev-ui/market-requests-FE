@@ -94,7 +94,7 @@ export const requestSlice = createSlice({
       })
       .addCase(fetchRequestsAsync.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) || "Failed to fetch requests";
+        // state.error = (action.payload as string) || "Failed to fetch requests";
       });
 
     // FETCH SINGLE REQUEST
@@ -113,7 +113,7 @@ export const requestSlice = createSlice({
       .addCase(fetchRequestByIdAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) ?? "Failed to load request";
-        Toast.fire({ icon: "error", title: state.error });
+        // Toast.fire({ icon: "error", title: state.error });
       });
 
     // CREATE REQUEST

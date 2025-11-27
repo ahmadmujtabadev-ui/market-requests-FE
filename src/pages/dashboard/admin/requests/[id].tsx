@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { JSX, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layouts';
 import {
   ArrowLeft,
@@ -8,18 +8,25 @@ import {
   AlertCircle,
   Download,
   Calendar,
-  User,
   Layers,
+  Sparkles,
+  Package,
+  ExternalLink,
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch } from '@/redux/store';
-import { fetchRequestByIdAsync, updateRequestStatusAsync } from '@/services/request/asyncThunk';
+import { fetchRequestByIdAsync } from '@/services/request/asyncThunk';
 import { selectSelectedRequest, selectRequestLoading } from '@/redux/slices/requestSlice';
 import type { RequestStatus } from '@/services/request/endpoint';
 import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<RequestStatus, {
+  label: string;
+  bgColor: string;
+  textColor: string;
+  icon: JSX.Element;
+}> = {
   new: {
     label: 'New',
     bgColor: 'bg-[#EEEEEE]',
@@ -60,33 +67,25 @@ function StatusBadge({ status }: { status: RequestStatus }) {
   );
 }
 
-export default function AdminRequestDetailPage() {
+// Helper to check if file is new (within last 24 hours)
+function isNewFile(createdAt: string): boolean {
+  const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
+  return new Date(createdAt).getTime() > oneDayAgo;
+}
+
+export default function AgentRequestDetailPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { id } = router.query;
 
   const request = useSelector(selectSelectedRequest);
   const isLoading = useSelector(selectRequestLoading);
-  const [isChangingStatus, setIsChangingStatus] = useState(false);
 
   useEffect(() => {
     if (id && typeof id === 'string') {
       dispatch(fetchRequestByIdAsync(id));
     }
   }, [dispatch, id]);
-
-  const handleStatusChange = async (newStatus: RequestStatus) => {
-    if (!request) return;
-
-    setIsChangingStatus(true);
-    try {
-      await dispatch(updateRequestStatusAsync({ id: request.id, status: newStatus }));
-      // Refresh the request data after status change
-      dispatch(fetchRequestByIdAsync(request.id));
-    } finally {
-      setIsChangingStatus(false);
-    }
-  };
 
   const getFileName = (url: string) => {
     try {
@@ -111,10 +110,20 @@ export default function AdminRequestDetailPage() {
           <div className="w-full max-w-5xl mx-auto">
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
-                <FileText className="w-12 h-12 text-[#595959] mx-auto mb-4" />
-                <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+                <Package className="w-16 h-16 text-[#595959] mx-auto mb-4" />
+                <h2 className="text-xl text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
                   Request not found
+                </h2>
+                <p className="text-sm text-[#595959] font-roboto mb-6" style={{ fontWeight: 400 }}>
+                  This request may have been deleted or you don't have access to it
                 </p>
+                <button
+                  onClick={() => router.push('/dashboard/agent/requests')}
+                  className="bg-black text-white px-6 py-3 rounded-lg font-manrope hover:bg-[#595959] transition-colors"
+                  style={{ fontWeight: 700 }}
+                >
+                  Back to Requests
+                </button>
               </div>
             </div>
           </div>
@@ -125,6 +134,7 @@ export default function AdminRequestDetailPage() {
 
   const agentFiles = request.files?.filter(f => f.fileType === 'agent_upload') || [];
   const completedFiles = request.files?.filter(f => f.fileType === 'va_completed') || [];
+  const newCompletedFiles = completedFiles.filter(f => isNewFile(f.createdAt));
 
   return (
     <DashboardLayout>
@@ -138,19 +148,40 @@ export default function AdminRequestDetailPage() {
         .font-roboto {
           font-family: 'Roboto', sans-serif;
         }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+
+        .shimmer {
+          background: linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0.1) 50%,
+            rgba(0, 0, 0, 0) 100%
+          );
+          background-size: 1000px 100%;
+          animation: shimmer 2s infinite;
+        }
       `}</style>
 
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
-        <div className="w-full max-w-5xl mx-auto">
+        <div className="w-full mx-auto">
           <button
-            onClick={() => router.push('/dashboard/admin/requests')}
+            onClick={() => router.push('/dashboard/agent/requests')}
             className="inline-flex items-center gap-2 text-[#595959] hover:text-black mb-6 font-roboto transition-colors"
             style={{ fontWeight: 500 }}
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to All Requests
+            Back to My Requests
           </button>
 
+          {/* Header Card */}
           <div className="bg-white rounded-lg border border-[#EEEEEE] p-8 mb-6">
             <div className="flex items-start justify-between mb-6">
               <div className="flex-1">
@@ -169,75 +200,30 @@ export default function AdminRequestDetailPage() {
                   <span>Created {new Date(request.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
+              <StatusBadge status={request.status} />
             </div>
 
-            {/* Status with Admin Override */}
-            <div className="flex items-center gap-4 p-4 bg-[#EEEEEE] rounded-lg">
-              <div className="flex-1">
-                <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
-                  Current Status
-                </label>
-                <StatusBadge status={request.status} />
+            {/* New Updates Banner */}
+            {newCompletedFiles.length > 0 && (
+              <div className="bg-black text-blue p-4 rounded-lg flex items-center gap-3 shimmer">
+                <Sparkles className="w-6 h-6 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-manrope mb-1" style={{ fontWeight: 700 }}>
+                    New Completed Files Available!
+                  </p>
+                  <p className="text-xs opacity-90 font-roboto" style={{ fontWeight: 400 }}>
+                    Your VA has delivered {newCompletedFiles.length} new file{newCompletedFiles.length !== 1 ? 's' : ''} for this request
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
-                  Change Status (Admin Override)
-                </label>
-                <select
-                  value={request.status}
-                  onChange={(e) => handleStatusChange(e.target.value as RequestStatus)}
-                  disabled={isChangingStatus}
-                  className="w-full px-4 py-2.5 border border-[#EEEEEE] rounded-lg text-sm font-roboto bg-white focus:outline-none focus:ring-2 focus:ring-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontWeight: 500 }}
-                >
-                  <option value="new">New</option>
-                  <option value="progress">In Progress</option>
-                  <option value="revision">Needs Revision</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-            </div>
+            )}
           </div>
 
+          {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Sidebar */}
             <div className="lg:col-span-1 space-y-6">
-              {request.agent && (
-                <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <User className="w-5 h-5 text-[#595959]" />
-                    <h2 className="text-lg text-black font-manrope" style={{ fontWeight: 700 }}>
-                      Agent Information
-                    </h2>
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
-                        Name
-                      </p>
-                      <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-                        {request.agent.name}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
-                        Email
-                      </p>
-                      <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-                        {request.agent.email}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
-                        Agent ID
-                      </p>
-                      <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                        {request.agent.id.substring(0, 12)}...
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
+              {/* Template Info */}
               {request.template && (
                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                   <div className="flex items-center gap-2 mb-4">
@@ -267,8 +253,9 @@ export default function AdminRequestDetailPage() {
                       <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
                         Type
                       </p>
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-roboto ${request.template.type === 'residential' ? 'bg-black text-white' : 'bg-[#595959] text-white'
-                        }`} style={{ fontWeight: 600 }}>
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-roboto ${
+                        request.template.type === 'residential' ? 'bg-black text-white' : 'bg-[#595959] text-white'
+                      }`} style={{ fontWeight: 600 }}>
                         {request.template.type}
                       </span>
                     </div>
@@ -276,6 +263,7 @@ export default function AdminRequestDetailPage() {
                 </div>
               )}
 
+              {/* Deadline */}
               <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Calendar className="w-5 h-5 text-[#595959]" />
@@ -290,13 +278,40 @@ export default function AdminRequestDetailPage() {
                   })}
                 </p>
               </div>
+
+              {/* Timeline */}
+              <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
+                <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
+                  Timeline
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
+                      Created At
+                    </p>
+                    <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
+                      {new Date(request.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
+                      Last Updated
+                    </p>
+                    <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
+                      {new Date(request.updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
+            {/* Right Content */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Platforms */}
               {request.platforms && request.platforms.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                   <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-                    Platforms
+                    Target Platforms
                   </h2>
                   <div className="flex flex-wrap gap-2">
                     {request.platforms.map((platform, idx) => (
@@ -312,6 +327,7 @@ export default function AdminRequestDetailPage() {
                 </div>
               )}
 
+              {/* Dimensions */}
               {request.dimensions && (
                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                   <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
@@ -323,6 +339,7 @@ export default function AdminRequestDetailPage() {
                 </div>
               )}
 
+              {/* Instructions */}
               {request.notes && (
                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                   <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
@@ -336,10 +353,11 @@ export default function AdminRequestDetailPage() {
                 </div>
               )}
 
+              {/* Your Uploaded Files */}
               {agentFiles.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                   <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-                    Agent Uploaded Files ({agentFiles.length})
+                    Your Uploaded Files ({agentFiles.length})
                   </h2>
                   <div className="space-y-2">
                     {agentFiles.map((file) => (
@@ -373,65 +391,119 @@ export default function AdminRequestDetailPage() {
                 </div>
               )}
 
-              {completedFiles.length > 0 && (
-                <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-                  <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-                    VA Completed Files ({completedFiles.length})
-                  </h2>
-                  <div className="space-y-2">
-                    {completedFiles.map((file) => (
-                      <div
-                        key={file.id}
-                        className="flex items-center justify-between p-4 bg-black text-white rounded-lg hover:bg-[#595959] transition-colors"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-roboto truncate" style={{ fontWeight: 500 }}>
-                              {getFileName(file.fileUrl)}
-                            </p>
-                            <p className="text-xs opacity-70 font-roboto mt-1" style={{ fontWeight: 400 }}>
-                              Completed {new Date(file.createdAt).toLocaleDateString()}
-                            </p>
+              {/* COMPLETED FILES - PROMINENT SECTION */}
+              {completedFiles.length > 0 ? (
+                <div className="bg-gradient-to-br from-black to-[#595959] rounded-lg border-2 border-black p-6 shadow-xl">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white rounded-full p-2">
+                        <CheckCircle className="w-6 h-6 text-black" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl text-white font-manrope" style={{ fontWeight: 800 }}>
+                          Completed Work from VA
+                        </h2>
+                        <p className="text-sm text-white/80 font-roboto mt-1" style={{ fontWeight: 400 }}>
+                          {completedFiles.length} file{completedFiles.length !== 1 ? 's' : ''} ready for download
+                        </p>
+                      </div>
+                    </div>
+                    {newCompletedFiles.length > 0 && (
+                      <div className="bg-green-500 text-white px-3 py-1.5 rounded-full flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        <span className="text-xs font-manrope" style={{ fontWeight: 700 }}>
+                          {newCompletedFiles.length} New
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {completedFiles.map((file) => {
+                      const isNew = isNewFile(file.createdAt);
+                      return (
+                        <div
+                          key={file.id}
+                          className={`flex items-center justify-between p-4 bg-white rounded-lg hover:shadow-lg transition-all ${
+                            isNew ? 'ring-2 ring-green-500' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="bg-black rounded-lg p-2 flex-shrink-0">
+                              <CheckCircle className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm text-black font-roboto truncate" style={{ fontWeight: 600 }}>
+                                  {getFileName(file.fileUrl)}
+                                </p>
+                                {isNew && (
+                                  <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-manrope" style={{ fontWeight: 700 }}>
+                                    NEW
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+                                Completed {new Date(file.createdAt).toLocaleDateString()} at {new Date(file.createdAt).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <a
+                              href={file.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-black text-white px-4 py-2 rounded-lg font-manrope hover:bg-[#595959] transition-colors flex items-center gap-2"
+                              style={{ fontWeight: 700 }}
+                            >
+                              <Download className="w-4 h-4" />
+                              Download
+                            </a>
+                            <a
+                              href={file.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 hover:bg-[#EEEEEE] rounded-lg transition-colors"
+                              title="Open in new tab"
+                            >
+                              <ExternalLink className="w-5 h-5 text-[#595959]" />
+                            </a>
                           </div>
                         </div>
-                        <a
-                          href={file.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 hover:bg-[#404040] rounded-lg transition-colors flex-shrink-0"
-                          title="Download file"
-                        >
-                          <Download className="w-5 h-5" />
-                        </a>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+
+                  {/* Download All Button */}
+                  {completedFiles.length > 1 && (
+                    <div className="mt-4 pt-4 border-t border-white/20">
+                      <button
+                        onClick={() => {
+                          completedFiles.forEach(file => {
+                            window.open(file.fileUrl, '_blank');
+                          });
+                        }}
+                        className="w-full bg-white text-black px-6 py-3 rounded-lg font-manrope hover:bg-[#EEEEEE] transition-colors flex items-center justify-center gap-2"
+                        style={{ fontWeight: 700 }}
+                      >
+                        <Download className="w-5 h-5" />
+                        Download All Files ({completedFiles.length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border border-[#EEEEEE] p-8 text-center">
+                  <div className="bg-[#EEEEEE] rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                    <Clock className="w-8 h-8 text-[#595959]" />
+                  </div>
+                  <h3 className="text-lg text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
+                    Work In Progress
+                  </h3>
+                  <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+                    Your VA is working on this request. Completed files will appear here.
+                  </p>
                 </div>
               )}
-              <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-                <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-                  Timeline
-                </h2>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-xs text-[#595959] font-roboto mb-2" style={{ fontWeight: 400 }}>
-                      Created At
-                    </p>
-                    <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-                      {new Date(request.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#595959] font-roboto mb-2" style={{ fontWeight: 400 }}>
-                      Last Updated
-                    </p>
-                    <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-                      {new Date(request.updatedAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

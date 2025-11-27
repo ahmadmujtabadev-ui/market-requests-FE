@@ -243,7 +243,16 @@ const Login = () => {
             </div>
           </div>
         </div>
-
+        <div className="absolute inset-x-0 bottom-4 flex justify-center">
+          <a
+            href="https://saadsproduction.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-[#777777]"
+          >
+            Developed by Saad&apos;s Production
+          </a>
+        </div>
       </div>
     </AuthLayout>
   );

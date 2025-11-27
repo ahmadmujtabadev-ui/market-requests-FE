@@ -61,13 +61,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   // ---- ROLE HANDLING (ADMIN / AGENT / VA) ----
   const rawRole = profile?.role?.toLowerCase() || 'agent';
 
-  // normalize to one of: admin | agent | va
   const userRole: 'admin' | 'agent' | 'va' =
     rawRole === 'admin'
       ? 'admin'
       : rawRole === 'va' || rawRole === 'virtual_assistant' || rawRole === 'virtual assistant'
-        ? 'va'
-        : 'agent';
+      ? 'va'
+      : 'agent';
 
   const userName: string = profile?.businessName || profile?.name || 'User';
   const userEmail: string = profile?.email || 'user@company.com';
@@ -114,9 +113,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     },
     {
       name: 'My Requests',
-      href: '/dashboard/agent/requests',
+      href: '/dashboard/admin/requests/requests',
       icon: FileText,
-      current: router.pathname === '/dashboard/agent/requests',
+      current: router.pathname === '/dashboard/admin/requests/requests',
       description: 'View All Requests',
     },
     {
@@ -135,7 +134,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     },
   ];
 
-  // ---- NEW: VIRTUAL ASSISTANT NAVIGATION ----
   const vaNavigation: NavigationItem[] = [
     {
       name: 'Work Queue',
@@ -144,22 +142,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       current: router.pathname === '/dashboard/vs/requestque',
       description: 'All incoming requests (by status)',
     },
-    // you can add more VA pages later, e.g. History, Reports, etc.
-    // {
-    //   name: 'Completed Jobs',
-    //   href: '/dashboard/va/completed',
-    //   icon: FolderOpen,
-    //   current: router.pathname === '/dashboard/va/completed',
-    //   description: 'Previously completed requests',
-    // },
   ];
 
   const navigation: NavigationItem[] =
     userRole === 'admin'
       ? adminNavigation
       : userRole === 'va'
-        ? vaNavigation
-        : agentNavigation;
+      ? vaNavigation
+      : agentNavigation;
 
   interface UserSettingItem {
     name: string;
@@ -208,7 +198,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           font-family: 'Roboto', sans-serif;
         }
       `}</style>
-      <div className="h-screen flex overflow-hidden bg-[#EEEEEE]">
+
+      {/* NOTE: removed overflow-hidden so inner content can scroll */}
+      <div className="h-screen flex bg-[#EEEEEE]">
         {/* Desktop sidebar */}
         <div className="hidden md:flex md:flex-shrink-0">
           <div className="flex flex-col w-72">
@@ -257,13 +249,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                           {userEmail}
                         </p>
                         <span
-                          className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${userRole === 'admin'
-                            ? 'bg-black text-white'
-                            : 'bg-[#595959] text-white'
-                            }`}
+                          className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${
+                            userRole === 'admin' ? 'bg-black text-white' : 'bg-[#595959] text-white'
+                          }`}
                           style={{ fontWeight: 700 }}
                         >
-                          {userRole === 'admin' ? 'Admin' : 'Agent'}
+                          {userRole === 'admin' ? 'Admin' : userRole === 'va' ? 'VA' : 'Agent'}
                         </span>
                       </div>
                     </div>
@@ -279,8 +270,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     {userRole === 'admin'
                       ? 'Admin Panel'
                       : userRole === 'va'
-                        ? 'VA Panel'
-                        : 'Main Menu'}
+                      ? 'VA Panel'
+                      : 'Main Menu'}
                   </p>
                   {navigation.map((item) => {
                     const IconComponent = item.icon;
@@ -288,26 +279,30 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       <a
                         key={item.name}
                         href={item.href}
-                        className={`${item.current
-                          ? 'bg-black text-white shadow-md'
-                          : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                          } group flex items-center px-4 py-3.5 text-sm rounded-lg transition-all duration-200`}
+                        className={`${
+                          item.current
+                            ? 'bg-black text-white shadow-md'
+                            : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
+                        } group flex items-center px-4 py-3.5 text-sm rounded-lg transition-all duration-200`}
                       >
                         <IconComponent
-                          className={`mr-3 flex-shrink-0 h-5 w-5 ${item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
-                            }`}
+                          className={`mr-3 flex-shrink-0 h-5 w-5 ${
+                            item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
+                          }`}
                         />
                         <div className="flex-1">
                           <p
-                            className={`font-manrope ${item.current ? 'text-white' : 'text-[#595959]'
-                              }`}
+                            className={`font-manrope ${
+                              item.current ? 'text-white' : 'text-[#595959]'
+                            }`}
                             style={{ fontWeight: 800 }}
                           >
                             {item.name}
                           </p>
                           <p
-                            className={`text-xs mt-0.5 font-roboto ${item.current ? 'text-white/80' : 'text-[#595959]'
-                              }`}
+                            className={`text-xs mt-0.5 font-roboto ${
+                              item.current ? 'text-white/80' : 'text-[#595959]'
+                            }`}
                             style={{ fontWeight: 300 }}
                           >
                             {item.description}
@@ -334,10 +329,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                             handleLogout();
                           }
                         }}
-                        className={`${item.name === 'Logout'
-                          ? 'text-red-600 hover:bg-red-50'
-                          : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                          } group flex items-center px-4 py-3 text-sm rounded-lg transition-all duration-200 cursor-pointer`}
+                        className={`${
+                          item.name === 'Logout'
+                            ? 'text-red-600 hover:bg-red-50'
+                            : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
+                        } group flex items-center px-4 py-3 text-sm rounded-lg transition-all duration-200 cursor-pointer`}
                       >
                         <IconComponent className="mr-3 flex-shrink-0 h-5 w-5" />
                         <span className="font-manrope" style={{ fontWeight: 700 }}>
@@ -381,7 +377,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               </div>
 
               <div className="px-4 py-4">
-                <div className="bg-[#EEEEEE] rounded-lg p-4 border border-[#595959]/10 shadow-sm">
+                <div className="bg[#EEEEEE] rounded-lg p-4 border border-[#595959]/10 shadow-sm">
                   <div className="flex items-center space-x-3">
                     {profile.profileImage ? (
                       <img
@@ -411,13 +407,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                         {userEmail}
                       </p>
                       <span
-                        className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${userRole === 'admin'
-                          ? 'bg-black text-white'
-                          : 'bg-[#595959] text-white'
-                          }`}
+                        className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${
+                          userRole === 'admin' ? 'bg-black text-white' : 'bg-[#595959] text-white'
+                        }`}
                         style={{ fontWeight: 700 }}
                       >
-                        {userRole === 'admin' ? 'Admin' : 'Agent'}
+                        {userRole === 'admin' ? 'Admin' : userRole === 'va' ? 'VA' : 'Agent'}
                       </span>
                     </div>
                   </div>
@@ -433,14 +428,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                         key={item.name}
                         href={item.href}
                         onClick={() => setSidebarOpen(false)}
-                        className={`${item.current
-                          ? 'bg-black text-white shadow-md'
-                          : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                          } group flex items-center px-4 py-3.5 text-base rounded-lg transition-all duration-200`}
+                        className={`${
+                          item.current
+                            ? 'bg-black text-white shadow-md'
+                            : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
+                        } group flex items-center px-4 py-3.5 text-base rounded-lg transition-all duration-200`}
                       >
                         <IconComponent
-                          className={`mr-3 flex-shrink-0 h-6 w-6 ${item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
-                            }`}
+                          className={`mr-3 flex-shrink-0 h-6 w-6 ${
+                            item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
+                          }`}
                         />
                         <span className="flex-1 font-manrope" style={{ fontWeight: 800 }}>
                           {item.name}
@@ -466,10 +463,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                           }
                           setSidebarOpen(false);
                         }}
-                        className={`${item.name === 'Logout'
-                          ? 'text-red-600 hover:bg-red-50'
-                          : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                          } group flex items-center px-4 py-3 text-base rounded-lg transition-all duration-200 cursor-pointer`}
+                        className={`${
+                          item.name === 'Logout'
+                            ? 'text-red-600 hover:bg-red-50'
+                            : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
+                        } group flex items-center px-4 py-3 text-base rounded-lg transition-all duration-200 cursor-pointer`}
                       >
                         <IconComponent className="mr-3 flex-shrink-0 h-6 w-6" />
                         <span className="font-manrope" style={{ fontWeight: 700 }}>
@@ -485,7 +483,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         </div>
 
         {/* Main Content Area */}
-        <div className="flex flex-col w-0 flex-1 overflow-hidden">
+        <div className="flex flex-col w-0 flex-1">
           {/* Mobile menu button */}
           <div className="md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-white border-b border-[#EEEEEE] shadow-sm">
             <button
@@ -507,7 +505,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     style={{ fontWeight: 800 }}
                   >
                     {navigation.find((item) => item.current)?.name ||
-                      (userRole === 'admin' ? 'Admin Dashboard' : 'Agent Dashboard')}
+                      (userRole === 'admin'
+                        ? 'Admin Dashboard'
+                        : userRole === 'va'
+                        ? 'VA Dashboard'
+                        : 'Agent Dashboard')}
                   </h1>
                   <p
                     className="text-sm text-[#595959] mt-1 font-roboto"
@@ -532,8 +534,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                      className={`flex items-center justify-center rounded-full h-10 w-10 transition-all duration-200 shadow-sm ${profile ? '' : 'bg-black hover:bg-[#595959]'
-                        }`}
+                      className={`flex items-center justify-center rounded-full h-10 w-10 transition-all duration-200 shadow-sm ${
+                        profile ? '' : 'bg-black hover:bg-[#595959]'
+                      }`}
                     >
                       {profile.profileImage ? (
                         <img
@@ -619,9 +622,25 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             </div>
           </div>
 
-          {/* Main Content */}
-          <main className="flex-1 relative overflow-y-auto focus:outline-none bg-[#EEEEEE]">
-            {children}
+          {/* Main Content + Footer */}
+          <main className="flex-1 flex flex-col bg-[#EEEEEE] overflow-hidden">
+            <div className="flex-1 relative overflow-y-auto focus:outline-none">
+              {children}
+            </div>
+
+            <footer className="border-t border-[#DDDDDD] bg-white px-6 lg:px-8 py-3 text-[11px] text-[#777777] flex justify-end">
+              <span>
+                Powered by{' '}
+                <a
+                  href="https://saadsproduction.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  Saad&apos;s Production
+                </a>
+              </span>
+            </footer>
           </main>
         </div>
       </div>

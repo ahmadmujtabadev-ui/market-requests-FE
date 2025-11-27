@@ -17,6 +17,7 @@ import type { AppDispatch } from '@/redux/store';
 import { fetchRequestByIdAsync, updateRequestStatusAsync } from '@/services/request/asyncThunk';
 import { selectSelectedRequest, selectRequestLoading } from '@/redux/slices/requestSlice';
 import type { RequestStatus } from '@/services/request/endpoint';
+import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
 const STATUS_CONFIG = {
   new: {
@@ -98,18 +99,7 @@ export default function AdminRequestDetailPage() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
-          <div className="w-full max-w-5xl mx-auto">
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#EEEEEE] border-t-black mb-4"></div>
-                <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                  Loading request details...
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+       <LoadingOverlay isVisible/>
       </DashboardLayout>
     );
   }

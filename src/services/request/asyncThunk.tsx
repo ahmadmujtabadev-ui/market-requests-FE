@@ -47,7 +47,7 @@ export const fetchRequestByIdAsync = createAsyncThunk(
 
       const response = await requestService.getById(id);
 
-      if (!response?.message) {
+      if (response.message === "Request retrieved") {
         Toast.fire({ icon: "success", title: response.message as string });
       }
 
@@ -63,18 +63,33 @@ export const fetchRequestByIdAsync = createAsyncThunk(
 /**
  * Create new request (agent only)
  */
-export const createRequestAsync = createAsyncThunk(
+export const createRequestAsync = createAsyncThunk<
+  any,
+  FormData | CreateRequestDto
+>(
   "request/createRequest",
-  async (dto: CreateRequestDto, { rejectWithValue }) => {
+  async (dto, { rejectWithValue }) => {
     try {
       const token = `${ls.get("access_token", { decrypt: true })}`;
-      console.log("token", token)
+      console.log("token", token);
       HttpService.setToken(token);
 
-      const response = await requestService.create(dto);
+      const isFormData =
+        typeof FormData !== "undefined" && dto instanceof FormData;
+
+      const response = await requestService.create(dto as any, {
+        // add multipart headers only when dto is FormData
+        ...(isFormData && {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }),
+      });
 
       if (!response?.message) {
-        return rejectWithValue(response.message || "Failed to create request");
+        return rejectWithValue(
+          response.message || "Failed to create request"
+        );
       }
 
       return response.request || response.data;
@@ -85,6 +100,7 @@ export const createRequestAsync = createAsyncThunk(
     }
   }
 );
+
 
 /**
  * Update request (agent can update their own)
@@ -146,35 +162,50 @@ export const updateRequestStatusAsync = createAsyncThunk(
 );
 
 /**
- * Upload completed file (VA only)
+ * Upload completed file async thunk
+ * Handles multipart/form-data file upload
  */
 export const uploadCompletedFileAsync = createAsyncThunk(
-  "request/uploadCompletedFile",
+  'request/uploadCompletedFile',
   async (
-    { id, fileUrl, fileType }: { id: string; fileUrl: string; fileType?: string },
+    {
+      id,
+      formData
+    }: {
+      id: string;
+      formData: FormData;
+    },
     { rejectWithValue }
   ) => {
     try {
-      const token = `${ls.get("access_token", { decrypt: true })}`;
+      const token = `${ls.get('access_token', { decrypt: true })}`;
       HttpService.setToken(token);
 
-      const response = await requestService.uploadFile(id, fileUrl, fileType);
+      // Use the service method with multipart/form-data
+      const response = await requestService.uploadFile(id, formData);
 
-      if (!response?.message) {
-        return rejectWithValue(response.message || "Failed to upload file");
+      if (response.message === "File uploaded") {
+        Toast.fire({
+          icon: "success",
+          title: response.message,
+        });
       }
 
       return {
         requestId: id,
-        file: response.file || response.data
+        file: response.data?.file || response.file || response.data,
+        message: response.message || 'File uploaded successfully',
       };
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to upload file"
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to upload file'
       );
     }
   }
 );
+
 
 /**
  * Delete request file
