@@ -51,7 +51,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const backgroundImage = '/Logo.png';
+  const backgroundImage = '/logo.png';
 
   const handleLogout = () => {
     dispatch(userLogout());
