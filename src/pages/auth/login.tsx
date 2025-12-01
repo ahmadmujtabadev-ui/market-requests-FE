@@ -101,7 +101,6 @@ const Login = () => {
 
   return (
     <AuthLayout>
-      {/* Split layout identical to Sign Up: left = brand panel, right = form panel */}
       <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
         {/* LEFT PANEL (image + gradient + logo) */}
         <div
