@@ -228,7 +228,7 @@ export default function DashboardOverviewPage() {
                     title="View All Requests"
                     description="See your complete request history"
                     icon={<Package className="w-6 h-6" />}
-                    onClick={() => router.push('/dashboard/agent/requests')}
+                    onClick={() => router.push('/dashboard/admin/requests/requests')}
                   />
                 </div>
               </div>
