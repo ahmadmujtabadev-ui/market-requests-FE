@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 // src/pages/auth/newpassword.tsx (Redux Version)
 
 import React, { useState, useEffect } from 'react';
