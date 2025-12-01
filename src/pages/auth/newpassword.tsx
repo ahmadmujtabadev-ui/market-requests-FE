@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
-// src/pages/auth/newpassword.tsx (Redux Version)
+// src/pages/auth/newpassword.tsx
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -19,21 +18,26 @@ const NewPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  console.log(error)
   const [token, setToken] = useState('');
+  console.log("token 22", token)
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: '',
   });
 
+  // ✅ UNCOMMENT THIS - This extracts the token from URL
   useEffect(() => {
     const tokenFromUrl = searchParams.get('token');
+    console.log('Token from URL:', tokenFromUrl); // Debug log
+    
     if (!tokenFromUrl) {
       setError('Invalid or missing reset token');
-      Toast.fire({
-        icon: 'error',
-        title: 'Invalid Link',
-        text: 'This password reset link is invalid or has expired',
-      });
+      // Toast.fire({
+      //   icon: 'error',
+      //   title: 'Invalid Link',
+      //   text: 'This password reset link is invalid or has expired',
+      // });
     } else {
       setToken(tokenFromUrl);
     }
@@ -49,6 +53,10 @@ const NewPassword = () => {
   };
 
   const validateForm = () => {
+    if (!token) {
+      setError('Invalid reset token');
+      return false;
+    }
     if (!formData.password || formData.password.length < 8) {
       setError('Password must be at least 8 characters long');
       return false;
@@ -62,15 +70,12 @@ const NewPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!token) {
-      setError('Invalid reset token');
-      return;
-    }
 
     if (!validateForm()) {
       return;
     }
+
+    console.log('Submitting with token:', token); // Debug log
 
     setIsSubmitting(true);
     setError('');
@@ -78,7 +83,7 @@ const NewPassword = () => {
     try {
       const result = await dispatch(
         userResetPasswordAsync({
-          token: token,
+          token: token, // This will now have the value from URL
           newPassword: formData.password,
         })
       ).unwrap();
@@ -89,10 +94,8 @@ const NewPassword = () => {
         text: result?.message || 'You can now login with your new password',
       });
 
-      // Clear form
       setFormData({ password: '', confirmPassword: '' });
 
-      // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push('/auth/login');
       }, 2000);
@@ -119,17 +122,11 @@ const NewPassword = () => {
           Create New Password
         </h2>
 
-        {error && (
+        {/* {error && (
           <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
             {error}
           </div>
-        )}
-
-        {!token && (
-          <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded text-sm">
-            Invalid or missing reset token. Please request a new password reset link.
-          </div>
-        )}
+        )} */}
 
         <div className="space-y-4">
           <div>
@@ -212,7 +209,6 @@ const NewPassword = () => {
 };
 
 export default NewPassword;
-
 // // src/pages/auth/newpassword.tsx
 
 // import React, { useState } from 'react';
