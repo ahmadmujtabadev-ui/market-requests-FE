@@ -1,4 +1,5 @@
-import React, { JSX, useEffect } from 'react';
+import React, { JSX, useEffect, useState } from 'react';
+import { saveAs } from 'file-saver';
 import { DashboardLayout } from '@/components/layouts';
 import {
   ArrowLeft,
@@ -12,6 +13,7 @@ import {
   Sparkles,
   Package,
   ExternalLink,
+  Loader2, // Import Loader icon
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,6 +22,9 @@ import { fetchRequestByIdAsync } from '@/services/request/asyncThunk';
 import { selectSelectedRequest, selectRequestLoading } from '@/redux/slices/requestSlice';
 import type { RequestStatus } from '@/services/request/endpoint';
 import { LoadingOverlay } from '@/components/loaders/overlayloader';
+import { API_ENDPOINT } from '@/config';
+
+// ... STATUS_CONFIG and StatusBadge remain same ...
 
 const STATUS_CONFIG: Record<RequestStatus, {
   label: string;
@@ -67,7 +72,6 @@ function StatusBadge({ status }: { status: RequestStatus }) {
   );
 }
 
-// Helper to check if file is new (within last 24 hours)
 function isNewFile(createdAt: string): boolean {
   const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
   return new Date(createdAt).getTime() > oneDayAgo;
@@ -81,6 +85,10 @@ export default function AgentRequestDetailPage() {
   const request = useSelector(selectSelectedRequest);
   const isLoading = useSelector(selectRequestLoading);
 
+  // Loading states for downloads
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
+  const [downloadingAll, setDownloadingAll] = useState(false);
+
   useEffect(() => {
     if (id && typeof id === 'string') {
       dispatch(fetchRequestByIdAsync(id));
@@ -92,6 +100,56 @@ export default function AgentRequestDetailPage() {
       return url.split('/').pop() || 'file';
     } catch {
       return 'file';
+    }
+  };
+
+   const handleDownload = async (fileUrl: string, fileId: string) => {
+    // Add file to downloading set
+    setDownloadingFiles(prev => new Set(prev).add(fileId));
+
+    try {
+      const downloadUrl = `${API_ENDPOINT}request/download/file?fileUrl=${encodeURIComponent(fileUrl)}`;
+      window.location.href = downloadUrl;
+
+      // Remove from downloading state after a short delay
+      setTimeout(() => {
+        setDownloadingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(fileId);
+          return newSet;
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('Download failed:', error);
+      setDownloadingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fileId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    setDownloadingAll(true);
+
+    try {
+      for (let i = 0; i < completedFiles.length; i++) {
+        const file = completedFiles[i];
+        const downloadUrl = `${API_ENDPOINT}request/download/file?fileUrl=${encodeURIComponent(file.fileUrl)}`;
+
+        // Open download in new window with delay
+        setTimeout(() => {
+          window.open(downloadUrl, '_blank');
+        }, i * 1000);
+      }
+
+      // Reset loading state after all files are queued
+      setTimeout(() => {
+        setDownloadingAll(false);
+      }, completedFiles.length * 1000 + 1000);
+    } catch (error) {
+      console.error('Download all failed:', error);
+      setDownloadingAll(false);
     }
   };
 
@@ -168,6 +226,16 @@ export default function AgentRequestDetailPage() {
           background-size: 1000px 100%;
           animation: shimmer 2s infinite;
         }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
       `}</style>
 
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
@@ -221,7 +289,7 @@ export default function AgentRequestDetailPage() {
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Sidebar */}
+            {/* Left Sidebar - Keep as is */}
             <div className="lg:col-span-1 space-y-6">
               {/* Template Info */}
               {request.template && (
@@ -253,9 +321,8 @@ export default function AgentRequestDetailPage() {
                       <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
                         Type
                       </p>
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-roboto ${
-                        request.template.type === 'residential' ? 'bg-black text-white' : 'bg-[#595959] text-white'
-                      }`} style={{ fontWeight: 600 }}>
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-roboto ${request.template.type === 'residential' ? 'bg-black text-white' : 'bg-[#595959] text-white'
+                        }`} style={{ fontWeight: 600 }}>
                         {request.template.type}
                       </span>
                     </div>
@@ -365,33 +432,56 @@ export default function AgentRequestDetailPage() {
                         key={file.id}
                         className="flex items-center justify-between p-4 bg-[#EEEEEE] rounded-lg hover:bg-[#E0E0E0] transition-colors"
                       >
+                        {/* Left side: file info */}
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <FileText className="w-5 h-5 text-[#595959] flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-black font-roboto truncate" style={{ fontWeight: 500 }}>
+                            <p
+                              className="text-sm text-black font-roboto truncate"
+                              style={{ fontWeight: 500 }}
+                            >
                               {getFileName(file.fileUrl)}
                             </p>
-                            <p className="text-xs text-[#595959] font-roboto mt-1" style={{ fontWeight: 400 }}>
+                            <p
+                              className="text-xs text-[#595959] font-roboto mt-1"
+                              style={{ fontWeight: 400 }}
+                            >
                               Uploaded {new Date(file.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
-                        <a
-                          href={file.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 hover:bg-white rounded-lg transition-colors flex-shrink-0"
-                          title="Download file"
-                        >
-                          <Download className="w-5 h-5 text-[#595959]" />
-                        </a>
+
+                        {/* Right side: download button */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => handleDownload(file.fileUrl, file.id)}
+                            // disabled={isDownloading}
+                            // className={`bg-black text-white px-4 py-2 rounded-lg font-manrope hover:bg-[#595959] transition-colors flex items-center gap-2 ${isDownloading ? 'opacity-70 cursor-not-allowed' : ''
+                            //   }`}
+                            style={{ fontWeight: 700 }}
+                          >
+                            {/* {isDownloading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Downloading...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-4 h-4" />
+                                Download
+                              </>
+                            )} */}
+                            Download
+                          </button>
+                        </div>
                       </div>
+
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* COMPLETED FILES - PROMINENT SECTION */}
+              {/* COMPLETED FILES - WITH LOADING STATE */}
               {completedFiles.length > 0 ? (
                 <div className="bg-gradient-to-br from-black to-[#595959] rounded-lg border-2 border-black p-6 shadow-xl">
                   <div className="flex items-center justify-between mb-6">
@@ -420,12 +510,13 @@ export default function AgentRequestDetailPage() {
                   <div className="space-y-3">
                     {completedFiles.map((file) => {
                       const isNew = isNewFile(file.createdAt);
+                      const isDownloading = downloadingFiles.has(file.id);
+
                       return (
                         <div
                           key={file.id}
-                          className={`flex items-center justify-between p-4 bg-white rounded-lg hover:shadow-lg transition-all ${
-                            isNew ? 'ring-2 ring-green-500' : ''
-                          }`}
+                          className={`flex items-center justify-between p-4 bg-white rounded-lg hover:shadow-lg transition-all ${isNew ? 'ring-2 ring-green-500' : ''
+                            }`}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="bg-black rounded-lg p-2 flex-shrink-0">
@@ -448,45 +539,52 @@ export default function AgentRequestDetailPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <a
-                              href={file.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="bg-black text-white px-4 py-2 rounded-lg font-manrope hover:bg-[#595959] transition-colors flex items-center gap-2"
+                            <button
+                              onClick={() => handleDownload(file.fileUrl, file.id)}
+                              disabled={isDownloading}
+                              className={`bg-black text-white px-4 py-2 rounded-lg font-manrope hover:bg-[#595959] transition-colors flex items-center gap-2 ${isDownloading ? 'opacity-70 cursor-not-allowed' : ''
+                                }`}
                               style={{ fontWeight: 700 }}
                             >
-                              <Download className="w-4 h-4" />
-                              Download
-                            </a>
-                            <a
-                              href={file.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-2 hover:bg-[#EEEEEE] rounded-lg transition-colors"
-                              title="Open in new tab"
-                            >
-                              <ExternalLink className="w-5 h-5 text-[#595959]" />
-                            </a>
+                              {isDownloading ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Downloading...
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="w-4 h-4" />
+                                  Download
+                                </>
+                              )}
+                            </button>
                           </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* Download All Button */}
+                  {/* Download All Button with Loading */}
                   {completedFiles.length > 1 && (
                     <div className="mt-4 pt-4 border-t border-white/20">
                       <button
-                        onClick={() => {
-                          completedFiles.forEach(file => {
-                            window.open(file.fileUrl, '_blank');
-                          });
-                        }}
-                        className="w-full bg-white text-black px-6 py-3 rounded-lg font-manrope hover:bg-[#EEEEEE] transition-colors flex items-center justify-center gap-2"
+                        onClick={handleDownloadAll}
+                        disabled={downloadingAll}
+                        className={`w-full bg-white text-black px-6 py-3 rounded-lg font-manrope hover:bg-[#EEEEEE] transition-colors flex items-center justify-center gap-2 ${downloadingAll ? 'opacity-70 cursor-not-allowed' : ''
+                          }`}
                         style={{ fontWeight: 700 }}
                       >
-                        <Download className="w-5 h-5" />
-                        Download All Files ({completedFiles.length})
+                        {downloadingAll ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Downloading All Files...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-5 h-5" />
+                            Download All Files ({completedFiles.length})
+                          </>
+                        )}
                       </button>
                     </div>
                   )}

@@ -6,7 +6,11 @@ export default class MyDocument extends Document {
   render() {
     return (
       <Html lang="en">
-        <Head />
+        <Head>
+          {/* Favicon goes here */}
+          <link rel="icon" href="/favicon.jpeg" />
+          {/* or: <link rel="icon" type="image/png" href="/favicon.png" /> */}
+        </Head>
         <body className={roboto.className}>
           <Main />
           <NextScript />

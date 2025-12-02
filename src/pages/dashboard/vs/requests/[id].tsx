@@ -30,6 +30,7 @@ import {
 } from '@/redux/slices/requestSlice';
 import type { RequestStatus } from '@/services/request/endpoint';
 import { LoadingOverlay } from '@/components/loaders/overlayloader';
+import { API_ENDPOINT } from '@/config';
 
 const STATUS_CONFIG: Record<
   RequestStatus,
@@ -94,7 +95,7 @@ export default function VaRequestDetailPage() {
 
   const request = useSelector(selectSelectedRequest);
   const isLoading = useSelector(selectRequestLoading);
-
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [localStatus, setLocalStatus] = useState<RequestStatus | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -132,7 +133,7 @@ export default function VaRequestDetailPage() {
       // Refresh request data
       dispatch(fetchRequestByIdAsync(request.id));
     } catch (e: any) {
-        console.log(e)
+      console.log(e)
     } finally {
       setStatusSaving(false);
     }
@@ -187,9 +188,35 @@ export default function VaRequestDetailPage() {
       dispatch(fetchRequestByIdAsync(request.id));
       setSelectedFile(null);
     } catch (e: any) {
-        console.log(e)
+      console.log(e)
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDownload = async (fileUrl: string, fileId: string) => {
+    // Add file to downloading set
+    setDownloadingFiles(prev => new Set(prev).add(fileId));
+
+    try {
+      const downloadUrl = `${API_ENDPOINT}request/download/file?fileUrl=${encodeURIComponent(fileUrl)}`;
+      window.location.href = downloadUrl;
+
+      // Remove from downloading state after a short delay
+      setTimeout(() => {
+        setDownloadingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(fileId);
+          return newSet;
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('Download failed:', error);
+      setDownloadingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fileId);
+        return newSet;
+      });
     }
   };
 
@@ -200,6 +227,7 @@ export default function VaRequestDetailPage() {
       </DashboardLayout>
     );
   }
+
 
   if (!request) {
     return (
@@ -294,11 +322,10 @@ export default function VaRequestDetailPage() {
                       key={s}
                       type="button"
                       onClick={() => setLocalStatus(s)}
-                      className={`px-4 py-2 rounded-lg text-sm font-manrope border-2 transition-all ${
-                        localStatus === s
-                          ? 'bg-black text-white border-black'
-                          : 'bg-white text-[#595959] border-[#EEEEEE] hover:border-black/30'
-                      }`}
+                      className={`px-4 py-2 rounded-lg text-sm font-manrope border-2 transition-all ${localStatus === s
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-[#595959] border-[#EEEEEE] hover:border-black/30'
+                        }`}
                       style={{ fontWeight: 700 }}
                     >
                       {STATUS_CONFIG[s].label}
@@ -314,13 +341,12 @@ export default function VaRequestDetailPage() {
                       !localStatus ||
                       localStatus === request.status
                     }
-                    className={`inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${
-                      statusSaving ||
+                    className={`inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${statusSaving ||
                       !localStatus ||
                       localStatus === request.status
-                        ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed'
-                        : 'bg-black text-white hover:bg-[#595959]'
-                    } transition-colors`}
+                      ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed'
+                      : 'bg-black text-white hover:bg-[#595959]'
+                      } transition-colors`}
                     style={{ fontWeight: 700 }}
                   >
                     {statusSaving && (
@@ -584,23 +610,26 @@ export default function VaRequestDetailPage() {
                               className="text-xs text-[#595959] font-roboto mt-1"
                               style={{ fontWeight: 400 }}
                             >
-                              Uploaded{' '}
-                              {new Date(file.createdAt).toLocaleDateString()}
+                              Uploaded {new Date(file.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
-                        <a
-                          href={file.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 hover:bg-white rounded-lg transition-colors flex-shrink-0"
-                          title="Download file"
-                        >
-                          <Download className="w-5 h-5 text-[#595959]" />
-                        </a>
+
+                        {/* Download button */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => handleDownload(file.fileUrl, file.id)}
+                            // disabled={isDownloading}
+
+                            style={{ fontWeight: 700 }}
+                          >
+                            Download
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
+
                 </div>
               )}
 
@@ -637,15 +666,16 @@ export default function VaRequestDetailPage() {
                             </p>
                           </div>
                         </div>
-                        <a
-                          href={file.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 hover:bg-[#404040] rounded-lg transition-colors flex-shrink-0"
-                          title="Download file"
-                        >
-                          <Download className="w-5 h-5" />
-                        </a>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => handleDownload(file.fileUrl, file.id)}
+                            // disabled={isDownloading}
+
+                            style={{ fontWeight: 700 }}
+                          >
+                            Download
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -665,11 +695,10 @@ export default function VaRequestDetailPage() {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    dragActive
-                      ? 'border-black bg-[#FAFAFA]'
-                      : 'border-[#EEEEEE] bg-white hover:border-black/40'
-                  }`}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${dragActive
+                    ? 'border-black bg-[#FAFAFA]'
+                    : 'border-[#EEEEEE] bg-white hover:border-black/40'
+                    }`}
                 >
                   <input
                     id="completed-file-input"
@@ -743,11 +772,10 @@ export default function VaRequestDetailPage() {
                       type="button"
                       onClick={handleUploadFile}
                       disabled={uploading}
-                      className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${
-                        uploading
-                          ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed'
-                          : 'bg-black text-white hover:bg-[#595959]'
-                      } transition-colors`}
+                      className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${uploading
+                        ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed'
+                        : 'bg-black text-white hover:bg-[#595959]'
+                        } transition-colors`}
                       style={{ fontWeight: 700 }}
                     >
                       {uploading && (
