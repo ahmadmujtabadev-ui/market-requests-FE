@@ -8,7 +8,6 @@ import {
   FileText,
   CheckCircle,
   AlertCircle,
-  Download,
   Calendar,
   X,
   Loader2,
@@ -96,6 +95,7 @@ export default function VaRequestDetailPage() {
   const request = useSelector(selectSelectedRequest);
   const isLoading = useSelector(selectRequestLoading);
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
+  console.log(downloadingFiles)
   const [localStatus, setLocalStatus] = useState<RequestStatus | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
   const [uploading, setUploading] = useState(false);

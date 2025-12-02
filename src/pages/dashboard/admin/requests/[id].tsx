@@ -1,5 +1,4 @@
 import React, { JSX, useEffect, useState } from 'react';
-import { saveAs } from 'file-saver';
 import { DashboardLayout } from '@/components/layouts';
 import {
   ArrowLeft,
@@ -12,7 +11,6 @@ import {
   Layers,
   Sparkles,
   Package,
-  ExternalLink,
   Loader2, // Import Loader icon
 } from 'lucide-react';
 import { useRouter } from 'next/router';
