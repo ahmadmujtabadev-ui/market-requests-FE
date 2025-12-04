@@ -102,10 +102,10 @@ export default function AddTemplateForm({
   const validationSchema = Yup.object({
     title: Yup.string().required("Template title is required").trim().min(3, "Title must be at least 3 characters"),
     category: Yup.string().required("Category is required"),
-    canvaUrl: Yup.string()
-      .required("Canva URL is required")
-      .url("Please enter a valid URL")
-      .matches(/^https?:\/\//, "URL must start with http:// or https://"),
+    // canvaUrl: Yup.string()
+    //   .required("Canva URL is required")
+    //   .url("Please enter a valid URL")
+    //   .matches(/^https?:\/\//, "URL must start with http:// or https://"),
     previewFiles: Yup.array().of(Yup.mixed<File>()).min(1, "Please select at least one image"),
   });
 
@@ -126,7 +126,7 @@ export default function AddTemplateForm({
           fd.append("title", values.title.trim());
           fd.append("type", values.type);
           fd.append("category", values.category);
-          fd.append("canvaUrl", values.canvaUrl);
+          // fd.append("canvaUrl", values.canvaUrl);
           const firstFile = values.previewFiles[0];
           if (firstFile) {
             fd.append("previewUrl", firstFile);
@@ -344,7 +344,7 @@ export default function AddTemplateForm({
                   )}
                 </div>
 
-                <div className="mb-6">
+                {/* <div className="mb-6">
                   <label
                     htmlFor="canvaUrl"
                     className="block text-sm text-black font-manrope mb-2"
@@ -380,7 +380,7 @@ export default function AddTemplateForm({
                   >
                     Link to the Canva template that agents can customize
                   </p>
-                </div>
+                </div> */}
 
                 <div className="mb-6">
                   <label

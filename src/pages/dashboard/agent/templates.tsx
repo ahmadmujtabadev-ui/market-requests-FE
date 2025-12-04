@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layouts';
-import { Search, FileText, Building2, Eye, ExternalLink, Filter } from 'lucide-react';
+import { Search, FileText, Building2, Eye, Filter } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch } from '@/redux/store';
@@ -88,8 +88,8 @@ export default function TemplateLibraryPage() {
       const matchesType = template.type === selectedType;
       const matchesCategory = selectedCategory === 'All' || template.category === selectedCategory;
       const matchesSearch = template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           template.category.toLowerCase().includes(searchQuery.toLowerCase());
-      
+        template.category.toLowerCase().includes(searchQuery.toLowerCase());
+
       return matchesType && matchesCategory && matchesSearch;
     });
   }, [templates, selectedType, selectedCategory, searchQuery]);
@@ -124,11 +124,10 @@ export default function TemplateLibraryPage() {
             <div className="inline-flex rounded-lg bg-white border border-[#EEEEEE] p-1">
               <button
                 onClick={() => handleTypeChange('residential')}
-                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${
-                  selectedType === 'residential'
-                    ? 'bg-black text-white shadow-sm'
-                    : 'text-[#595959] hover:text-black'
-                }`}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${selectedType === 'residential'
+                  ? 'bg-black text-white shadow-sm'
+                  : 'text-[#595959] hover:text-black'
+                  }`}
                 style={{ fontWeight: 700 }}
               >
                 <FileText className="w-4 h-4" />
@@ -136,11 +135,10 @@ export default function TemplateLibraryPage() {
               </button>
               <button
                 onClick={() => handleTypeChange('commercial')}
-                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${
-                  selectedType === 'commercial'
-                    ? 'bg-black text-white shadow-sm'
-                    : 'text-[#595959] hover:text-black'
-                }`}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${selectedType === 'commercial'
+                  ? 'bg-black text-white shadow-sm'
+                  : 'text-[#595959] hover:text-black'
+                  }`}
                 style={{ fontWeight: 700 }}
               >
                 <Building2 className="w-4 h-4" />
@@ -191,7 +189,7 @@ export default function TemplateLibraryPage() {
           </div>
 
           {isLoading ? (
-           <LoadingOverlay isVisible/>
+            <LoadingOverlay isVisible />
           ) : filteredTemplates.length === 0 ? (
             <div className="bg-white rounded-lg border border-[#EEEEEE] p-12 text-center">
               <FileText className="w-12 h-12 text-[#595959] mx-auto mb-4" />
@@ -209,12 +207,12 @@ export default function TemplateLibraryPage() {
                   key={template.id}
                   className="bg-white rounded-lg border border-[#EEEEEE] overflow-hidden hover:shadow-lg transition-shadow group"
                 >
-                  <div className="aspect-video bg-[#EEEEEE] relative overflow-hidden">
+                  <div className="h-[600px] bg-[#EEEEEE] relative overflow-hidden">
                     {template.previewUrl ? (
                       <img
                         src={template.previewUrl}
                         alt={template.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -237,18 +235,6 @@ export default function TemplateLibraryPage() {
                     </h3>
 
                     <div className="flex gap-2">
-                      {template.canvaUrl && (
-                        <a
-                          href={template.canvaUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-black text-black rounded-lg text-sm font-manrope hover:bg-[#EEEEEE] transition-all"
-                          style={{ fontWeight: 700 }}
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          Preview
-                        </a>
-                      )}
                       <button
                         onClick={() => handleUseTemplate(template.id)}
                         className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-black text-white rounded-lg text-sm font-manrope hover:bg-[#595959] transition-all"

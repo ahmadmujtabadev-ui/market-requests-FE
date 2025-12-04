@@ -7,7 +7,7 @@ import { DashboardLayout } from '@/components/layouts';
 import { fetchTemplatesAsync } from '@/services/template/asyncThunk';
 import { createRequestAsync } from '@/services/request/asyncThunk';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
-import { selectTemplateItems, selectTemplateLoading } from '@/redux/slices/templateSlice';
+import { selectTemplateItems } from '@/redux/slices/templateSlice';
 import { selectRequestLoading } from '@/redux/slices/requestSlice';
 import { useRouter } from 'next/router';
 
@@ -24,7 +24,7 @@ export default function SubmitRequestPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const templates = useAppSelector(selectTemplateItems);
-  const isLoadingTemplates = useAppSelector(selectTemplateLoading);
+  // const isLoadingTemplates = useAppSelector(selectTemplateLoading);
   const isSubmitting = useAppSelector(selectRequestLoading);
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
@@ -307,7 +307,7 @@ export default function SubmitRequestPage() {
                   >
                     Select Template <span className="text-red-600">*</span>
                   </label>
-                  {isLoadingTemplates ? (
+                  {/* {isLoadingTemplates ? (
                     <div className="text-sm text-[#595959]">
                       Loading templates...
                     </div>
@@ -326,8 +326,8 @@ export default function SubmitRequestPage() {
                         </option>
                       ))}
                     </select>
-                  )}
-                  {selectedTemplate && (
+                  )} */}
+                  {selectedTemplate ? (
                     <div className="mt-3 flex items-center gap-2 text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
                       <span
                         className="inline-block px-2 py-1 bg-[#EEEEEE] rounded text-xs font-manrope"
@@ -340,7 +340,7 @@ export default function SubmitRequestPage() {
                       <span>•</span>
                       <span>{selectedTemplate.category}</span>
                     </div>
-                  )}
+                  ):"None"}
                 </div>
 
                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
