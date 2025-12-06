@@ -12,7 +12,7 @@ import {
   AlertCircle,
   ChevronDown,
   Sparkles,
-  Bell,
+  // Bell,
   Package,
 } from 'lucide-react';
 import { useRouter } from 'next/router';
@@ -20,7 +20,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch } from '@/redux/store';
 import { fetchRequestsAsync } from '@/services/request/asyncThunk';
 import { selectRequests } from '@/redux/slices/requestSlice';
-import type { Request, RequestStatus } from '@/services/request/endpoint';
+import type {  RequestStatus } from '@/services/request/endpoint';
 
 const STATUS_CONFIG: Record<RequestStatus, {
   label: string;
@@ -67,19 +67,19 @@ function StatusBadge({ status }: { status: RequestStatus }) {
   );
 }
 
-// Helper to check if request has recent updates (within last 24 hours)
-function hasRecentUpdates(request: Request): boolean {
-  const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
-  const updatedTime = new Date(request.updatedAt).getTime();
-  return updatedTime > oneDayAgo && request.updatedAt !== request.createdAt;
-}
+// // Helper to check if request has recent updates (within last 24 hours)
+// function hasRecentUpdates(request: Request): boolean {
+//   const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
+//   const updatedTime = new Date(request.updatedAt).getTime();
+//   return updatedTime > oneDayAgo && request.updatedAt !== request.createdAt;
+// }
 
 // Helper to count new completed files (created within last 24 hours)
-function getNewCompletedFilesCount(request: Request): number {
-  const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
-  const completedFiles = request.files?.filter(f => f.fileType === 'va_completed') || [];
-  return completedFiles.filter(f => new Date(f.createdAt).getTime() > oneDayAgo).length;
-}
+// function getNewCompletedFilesCount(request: Request): number {
+//   const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
+//   const completedFiles = request.files?.filter(f => f.fileType === 'va_completed') || [];
+//   return completedFiles.filter(f => new Date(f.createdAt).getTime() > oneDayAgo).length;
+// }
 
 export default function AgentRequestsPage() {
   const router = useRouter();
@@ -116,10 +116,21 @@ export default function AgentRequestsPage() {
     };
   }, [requests]);
 
-  // Count requests with updates
-  const requestsWithUpdates = useMemo(() => {
-    return requests.filter(r => hasRecentUpdates(r) || getNewCompletedFilesCount(r) > 0).length;
-  }, [requests]);
+ // Replace your existing helper functions with these updated versions:
+
+// Helper to check if request has recent updates (within last 24 hours)
+function hasRecentUpdates(request: any): boolean {
+  const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
+  const updatedTime = new Date(request.updatedAt).getTime();
+  return updatedTime > oneDayAgo && request.updatedAt !== request.createdAt;
+}
+
+// Helper to count new completed files (created within last 24 hours)
+function getNewCompletedFilesCount(request: any): number {
+  const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
+  const completedFiles = request.files?.filter((f: any) => f.fileType === 'va_completed') || [];
+  return completedFiles.filter((f: any) => new Date(f.createdAt).getTime() > oneDayAgo).length;
+}
 
   const timeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -174,14 +185,14 @@ export default function AgentRequestsPage() {
               </div>
               
               {/* Notification Badge */}
-              {requestsWithUpdates > 0 && (
+              {/* {requestsWithUpdates > 0 && (
                 <div className="bg-black text-white px-4 py-2 rounded-lg flex items-center gap-2 pulse-glow">
                   <Bell className="w-5 h-5" />
                   <span className="text-sm font-manrope" style={{ fontWeight: 700 }}>
                     {requestsWithUpdates} New Update{requestsWithUpdates !== 1 ? 's' : ''}
                   </span>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
 

@@ -27,8 +27,6 @@ export interface Request {
     title: string;
     category: string;
     type: string;
-     previewUrl?: string;  // Make optional since it might not always exist
-    canvaUrl?: string;    // Add this property as optional
   };
   files?: RequestFile[];
 }

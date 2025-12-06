@@ -20,8 +20,9 @@ import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchRequestsAsync } from '@/services/request/asyncThunk';
 import type { AppDispatch } from '@/redux/store';
-import type { Request, RequestStatus } from '@/services/request/endpoint';
+import type {  RequestStatus } from '@/services/request/endpoint';
 import { selectRequests } from '@/redux/slices/requestSlice';
+import type { Request } from '@/redux/slices/requestSlice';
 
 const STATUS_CONFIG = {
   new: {

@@ -17,7 +17,8 @@ import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch } from '@/redux/store';
 import { fetchRequestsAsync } from '@/services/request/asyncThunk';
-import type { Request, RequestStatus } from '@/services/request/endpoint';
+import type {  RequestStatus } from '@/services/request/endpoint';
+import type { Request } from '@/redux/slices/requestSlice';
 import { selectRequests } from '@/redux/slices/requestSlice';
 
 // --- Status config & helpers ---

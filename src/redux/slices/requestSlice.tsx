@@ -39,7 +39,7 @@ export interface Request {
     title: string;
     category: string;
     type: string;
-    previewUrl:string;
+    previewUrl?:string;
   };
   files?: RequestFile[];
 }
