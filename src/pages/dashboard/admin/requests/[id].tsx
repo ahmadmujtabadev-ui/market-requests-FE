@@ -101,7 +101,7 @@ export default function AgentRequestDetailPage() {
     }
   };
 
-   const handleDownload = async (fileUrl: string, fileId: string) => {
+  const handleDownload = async (fileUrl: string, fileId: string) => {
     // Add file to downloading set
     setDownloadingFiles(prev => new Set(prev).add(fileId));
 
@@ -290,6 +290,7 @@ export default function AgentRequestDetailPage() {
             {/* Left Sidebar - Keep as is */}
             <div className="lg:col-span-1 space-y-6">
               {/* Template Info */}
+              {/* Template Info */}
               {request.template && (
                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                   <div className="flex items-center gap-2 mb-4">
@@ -328,6 +329,28 @@ export default function AgentRequestDetailPage() {
                 </div>
               )}
 
+              {/* Template Preview - Separate Card */}
+              {request.template?.previewUrl && (
+                <div className="bg-white rounded-lg border-2 border-black p-6 shadow-lg">
+                  <h2
+                    className="text-lg text-black font-manrope mb-4"
+                    style={{ fontWeight: 700 }}
+                  >
+                    Template Preview
+                  </h2>
+                  <div className="relative w-full bg-gradient-to-br from-[#FAFAFA] to-[#EEEEEE] rounded-lg overflow-hidden border border-[#EEEEEE]">
+                    <img
+                      src={request.template.previewUrl}
+                      alt={request.template.title}
+                      className="w-full h-auto object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23EEEEEE" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23595959" font-size="16"%3ENo Preview Available%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
+                  </div>
+
+                </div>
+              )}
               {/* Deadline */}
               <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -604,6 +627,6 @@ export default function AgentRequestDetailPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }
