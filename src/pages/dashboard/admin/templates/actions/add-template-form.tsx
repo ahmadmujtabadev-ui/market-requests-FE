@@ -1,75 +1,237 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Upload, X, FileText, Building2, Save } from "lucide-react";
+import { ArrowLeft, Upload, X, FileText, Building2, Save, Plus } from "lucide-react";
 import { DashboardLayout } from "@/components/layouts";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useAppDispatch } from "@/hooks/hooks";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { useRouter } from "next/router";
 import { createTemplateAsync, updateTemplateAsync } from "@/services/template/asyncThunk";
+import { createCategoryAsync, fetchCategoriesAsync } from "@/services/category/asyncThunk";
 import { LoadingOverlay } from "@/components/loaders/overlayloader";
+import { selectCategoryItems, selectCategoryLoading } from "@/redux/slices/categorySlice";
 
-const RESIDENTIAL_CATEGORIES = [
-  "Guides",
-  "Seller Guide",
-  "Property Brochures",
-  "12 Months Newsletter",
-  "Pre-Listing Checklist",
-  "Vendor List",
-  "Postcard (6*4 inch)",
-  "Postcard (6*4 inch) Congratulations",
-  "Postcard (6*4 inch) Holiday",
-  "Postcard (6*4 inch) Just Listed",
-  "Postcard (6*4 inch) Sold",
-  "Postcard (6*4 inch) Maintenence",
-  "Postcard (6*4 inch) Under Contract",
-  "Postcard (6*4 inch) General",
-  "Postcard (6*4 inch) Intro",
-  "Postcard (6*4 inch) Open House",
-  "Postcard (7*5 inch)",
-  "Postcard (7*5 inch) Congratulations",
-  "Postcard (7*5 inch) Holiday",
-  "Postcard (7*5 inch) Just Listed",
-  "Postcard (7*5 inch) Sold",
-  "Postcard (7*5 inch) Maintenence",
-  "Postcard (7*5 inch) Under Contract",
-  "Postcard (7*5 inch) General",
-  "Postcard (7*5 inch) Intro",
-  "Postcard (7*5 inch) Open House",
-  "Instagram Posts (1080*1080)",
-  "Instagram Posts (1080*1080) About us",
-  "Instagram Posts (1080*1080) General",
-  "Instagram Posts (1080*1080) Tips",
-  "Instagram Posts (1080*1080) Discover",
-  "Instagram Posts (1080*1080) Q&A",
-  "Instagram Posts (1080*1080) Listing",
-  "Instagram Posts (1080*1080) Marketing Updates",
-  "Instagram Posts (1080*1080) Open House",
-  "Instagram Posts (1080*1080) Testominal",
-  "Instagram Stories (1080*1920)",
-  "Instagram Stories (1080*1920) General",
-  "Instagram Stories (1080*1920) Discover",
-  "Instagram Stories (1080*1920) Listing",
-  "Instagram Stories (1080*1920) Marketing Updates",
-  "Instagram Stories (1080*1920) Open House",
-  "Instagram Stories (1080*1920) Testominal",
-  "Flyers",
-];
+// Add Category Modal Component
+interface AddCategoryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+}
 
-const COMMERCIAL_CATEGORIES = [
-  "For Sale",
-  "For Lease",
-  "Sold/Leased",
-  "Price Adjustment",
-  "Project Announcements",
-  "Market Reports",
-  "Property Highlights",
-  "Broker Branding",
-];
+const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+}) => {
+  const dispatch = useAppDispatch();
+  const isLoading = useAppSelector(selectCategoryLoading);
 
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    isActive: true,
+    order: 0,
+  });
+
+  const [errors, setErrors] = useState<{ name?: string }>({});
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : type === "number" ? Number(value) : value,
+    }));
+
+    if (errors[name as keyof typeof errors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: { name?: string } = {};
+    if (!formData.name.trim()) {
+      newErrors.name = "Category name is required";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    try {
+      await dispatch(
+        createCategoryAsync({
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          isActive: formData.isActive,
+          order: formData.order,
+        })
+      ).unwrap();
+
+      setFormData({
+        name: "",
+        description: "",
+        isActive: true,
+        order: 0,
+      });
+      setErrors({});
+
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      onClose();
+    } catch (error) {
+      console.error("Failed to create category:", error);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({
+      name: "",
+      description: "",
+      isActive: true,
+      order: 0,
+    });
+    setErrors({});
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-y-auto px-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 font-manrope">
+        <div className="flex items-center justify-between p-6 border-b border-[#EEEEEE]">
+          <h2 className="text-xl font-bold text-black">Add New Category</h2>
+          <button
+            onClick={handleClose}
+            className="text-[#595959] hover:text-black transition-colors"
+            disabled={isLoading}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-bold text-black mb-2"
+              >
+                Category Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/10 font-roboto ${errors.name ? "border-red-500" : "border-[#EEEEEE]"
+                  }`}
+                placeholder="Enter category name"
+                disabled={isLoading}
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600 font-roboto">{errors.name}</p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="description"
+                className="block text-sm font-bold text-black mb-2"
+              >
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={3}
+                className="w-full px-4 py-3 border border-[#EEEEEE] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/10 font-roboto"
+                placeholder="Enter category description (optional)"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* <div>
+              <label
+                htmlFor="order"
+                className="block text-sm font-bold text-black mb-2"
+              >
+                Display Order
+              </label>
+              <input
+                type="number"
+                id="order"
+                name="order"
+                value={formData.order}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-[#EEEEEE] rounded-lg focus:outline-none focus:ring-2 focus:ring-black/10 font-roboto"
+                placeholder="0"
+                min="0"
+                disabled={isLoading}
+              />
+              <p className="mt-1 text-xs text-[#595959] font-roboto">
+                Lower numbers appear first
+              </p>
+            </div> */}
+
+            {/* <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isActive"
+                name="isActive"
+                checked={formData.isActive}
+                onChange={handleChange}
+                className="w-4 h-4 text-black border-[#EEEEEE] rounded focus:ring-black"
+                disabled={isLoading}
+              />
+              <label
+                htmlFor="isActive"
+                className="ml-2 text-sm font-medium text-black"
+              >
+                Active
+              </label>
+            </div> */}
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="px-6 py-2.5 text-sm font-bold text-[#595959] bg-white border border-[#EEEEEE] rounded-lg hover:bg-[#EEEEEE] transition-colors"
+              disabled={isLoading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 text-sm font-bold text-white bg-black rounded-lg hover:bg-[#595959] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating..." : "Create Category"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Main Form Component
 interface FormValues {
   title: string;
   type: "residential" | "commercial";
-  category: string;
+  categoryId: string;
   canvaUrl: string;
   previewFiles: File[];
 }
@@ -78,7 +240,7 @@ interface Template {
   id: string;
   title: string;
   type: "residential" | "commercial";
-  category: string;
+  categoryId: string;
   canvaUrl: string;
   previewUrl?: string;
 }
@@ -96,24 +258,33 @@ export default function AddTemplateForm({
 }: AddTemplateFormProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const categories = useAppSelector(selectCategoryItems);
+  console.log("categories", categories)
+  const categoriesLoading = useAppSelector(selectCategoryLoading);
+
   const [previewImages, setPreviewImages] = useState<string[]>([]);
+  console.log("previewU", previewImages)
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const isEdit = mode === "edit";
 
+  // Fetch categories on mount
+  useEffect(() => {
+    dispatch(fetchCategoriesAsync());
+  }, [dispatch]);
+
   const validationSchema = Yup.object({
-    title: Yup.string().required("Template title is required").trim().min(3, "Title must be at least 3 characters"),
-    category: Yup.string().required("Category is required"),
-    // canvaUrl: Yup.string()
-    //   .required("Canva URL is required")
-    //   .url("Please enter a valid URL")
-    //   .matches(/^https?:\/\//, "URL must start with http:// or https://"),
-    previewFiles: Yup.array().of(Yup.mixed<File>()).min(1, "Please select at least one image"),
+    title: Yup.string()
+      .required("Template title is required")
+      .trim()
+      .min(3, "Title must be at least 3 characters"),
+    categoryId: Yup.string().required("Category is required"),
   });
 
   const formik = useFormik<FormValues>({
     initialValues: {
       title: "",
       type: "residential",
-      category: "",
+      categoryId: "",
       canvaUrl: "",
       previewFiles: [],
     },
@@ -125,20 +296,21 @@ export default function AddTemplateForm({
           const fd = new FormData();
           fd.append("title", values.title.trim());
           fd.append("type", values.type);
-          fd.append("category", values.category);
-          // fd.append("canvaUrl", values.canvaUrl);
+          fd.append("categoryId", values.categoryId);
           const firstFile = values.previewFiles[0];
           if (firstFile) {
             fd.append("previewUrl", firstFile);
           }
-          await dispatch(updateTemplateAsync({ id: templateId, data: fd })).unwrap();
+          await dispatch(
+            updateTemplateAsync({ id: templateId, data: fd })
+          ).unwrap();
         } else {
           const files = values.previewFiles;
           if (!files.length) throw new Error("No files selected");
           const fd = new FormData();
           fd.append("titlePrefix", values.title.trim());
           fd.append("type", values.type);
-          fd.append("category", values.category);
+          fd.append("categoryId", values.categoryId);
           fd.append("canvaUrl", values.canvaUrl);
           files.forEach((file) => {
             fd.append("previewUrl", file);
@@ -147,7 +319,10 @@ export default function AddTemplateForm({
         }
         router.push("/dashboard/admin/templates/template");
       } catch (error) {
-        console.error(isEdit ? "Failed to update template:" : "Failed to create templates:", error);
+        console.error(
+          isEdit ? "Failed to update template:" : "Failed to create templates:",
+          error
+        );
       } finally {
         setSubmitting(false);
       }
@@ -155,34 +330,49 @@ export default function AddTemplateForm({
   });
 
   useEffect(() => {
-    if (isEdit && initialTemplate) {
-      formik.setValues({
-        title: initialTemplate.title || "",
-        type: initialTemplate.type || "residential",
-        category: initialTemplate.category || "",
-        canvaUrl: initialTemplate.canvaUrl || "",
-        previewFiles: [],
-      });
-      if (initialTemplate.previewUrl) {
-        setPreviewImages([initialTemplate.previewUrl]);
+    if (!isEdit || !initialTemplate) return;
+
+    // Try to get id directly
+    let categoryId = initialTemplate.categoryId || "";
+
+    // If id is missing but name exists, match by name
+    if (!categoryId && (initialTemplate as any).category && categories.length) {
+      const match = categories.find(
+        (c) =>
+          c.name.toLowerCase() ===
+          (initialTemplate as any).category.toLowerCase()
+      );
+      if (match) {
+        categoryId = match.id;
       }
     }
-  }, [isEdit, initialTemplate]);
 
-  const categories =
-    formik.values.type === "residential" ? RESIDENTIAL_CATEGORIES : COMMERCIAL_CATEGORIES;
+    formik.setValues({
+      title: initialTemplate.title || "",
+      type: initialTemplate.type || "residential",
+      categoryId,
+      canvaUrl: initialTemplate.canvaUrl || "",
+      previewFiles: [],
+    });
+
+    if (initialTemplate.previewUrl) {
+      setPreviewImages([initialTemplate.previewUrl]);
+    }
+  }, [isEdit, initialTemplate, categories]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = Array.from(event.target.files || []);
     formik.setFieldValue("previewFiles", fileList);
-    const readers: Promise<string>[] = fileList.slice(0, 4).map(
-      (file) =>
-        new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        })
-    );
+    const readers: Promise<string>[] = fileList
+      .slice(0, 4)
+      .map(
+        (file) =>
+          new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          })
+      );
     Promise.all(readers).then((urls) => setPreviewImages(urls));
   };
 
@@ -193,11 +383,15 @@ export default function AddTemplateForm({
 
   const handleTypeChange = (type: "residential" | "commercial") => {
     formik.setFieldValue("type", type);
-    formik.setFieldValue("category", "");
+    formik.setFieldValue("categoryId", "");
   };
 
   const handleBack = () => {
     router.push("/dashboard/admin/templates/template");
+  };
+
+  const handleAddCategorySuccess = () => {
+    dispatch(fetchCategoriesAsync());
   };
 
   return (
@@ -252,8 +446,8 @@ export default function AddTemplateForm({
                       type="button"
                       onClick={() => handleTypeChange("residential")}
                       className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${formik.values.type === "residential"
-                        ? "bg-black text-white shadow-sm"
-                        : "text-[#595959] hover:text-black"
+                          ? "bg-black text-white shadow-sm"
+                          : "text-[#595959] hover:text-black"
                         }`}
                       style={{ fontWeight: 700 }}
                     >
@@ -264,8 +458,8 @@ export default function AddTemplateForm({
                       type="button"
                       onClick={() => handleTypeChange("commercial")}
                       className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${formik.values.type === "commercial"
-                        ? "bg-black text-white shadow-sm"
-                        : "text-[#595959] hover:text-black"
+                          ? "bg-black text-white shadow-sm"
+                          : "text-[#595959] hover:text-black"
                         }`}
                       style={{ fontWeight: 700 }}
                     >
@@ -292,8 +486,8 @@ export default function AddTemplateForm({
                     onBlur={formik.handleBlur}
                     placeholder="Base title for this batch"
                     className={`w-full px-4 py-3 border rounded-lg text-sm font-roboto focus:outline-none focus:ring-2 focus:ring-black/10 ${formik.touched.title && formik.errors.title
-                      ? "border-red-500"
-                      : "border-[#EEEEEE]"
+                        ? "border-red-500"
+                        : "border-[#EEEEEE]"
                       }`}
                     style={{ fontWeight: 400 }}
                   />
@@ -308,79 +502,57 @@ export default function AddTemplateForm({
                 </div>
 
                 <div className="mb-6">
-                  <label
-                    htmlFor="category"
-                    className="block text-sm text-black font-manrope mb-2"
-                    style={{ fontWeight: 700 }}
-                  >
-                    Category *
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label
+                      htmlFor="categoryId"
+                      className="block text-sm text-black font-manrope"
+                      style={{ fontWeight: 700 }}
+                    >
+                      Category *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddCategoryModalOpen(true)}
+                      className="inline-flex items-center gap-1 text-sm text-black hover:text-[#595959] font-manrope transition-colors"
+                      style={{ fontWeight: 700 }}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Category
+                    </button>
+                  </div>
                   <select
-                    id="category"
-                    name="category"
-                    value={formik.values.category}
+                    id="categoryId"
+                    name="categoryId"
+                    value={formik.values.categoryId}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className={`w-full px-4 py-3 border rounded-lg text-sm font-roboto appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-black/10 ${formik.touched.category && formik.errors.category
-                      ? "border-red-500"
-                      : "border-[#EEEEEE]"
+                    disabled={categoriesLoading}
+                    className={`w-full px-4 py-3 border rounded-lg text-sm font-roboto appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-black/10 ${formik.touched.categoryId && formik.errors.categoryId
+                        ? "border-red-500"
+                        : "border-[#EEEEEE]"
                       }`}
                     style={{ fontWeight: 400 }}
                   >
-                    <option value="">Select a category</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    <option value="">
+                      {categoriesLoading
+                        ? "Loading categories..."
+                        : "Select a category"}
+                    </option>
+                    {categories?.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
                       </option>
                     ))}
                   </select>
-                  {formik.touched.category && formik.errors.category && (
+                  {formik.touched.categoryId && formik.errors.categoryId && (
                     <p
                       className="text-sm text-red-600 font-roboto mt-1"
                       style={{ fontWeight: 400 }}
                     >
-                      {formik.errors.category}
+                      {formik.errors.categoryId}
                     </p>
                   )}
                 </div>
-
-                {/* <div className="mb-6">
-                  <label
-                    htmlFor="canvaUrl"
-                    className="block text-sm text-black font-manrope mb-2"
-                    style={{ fontWeight: 700 }}
-                  >
-                    Canva Template URL *
-                  </label>
-                  <input
-                    type="url"
-                    id="canvaUrl"
-                    name="canvaUrl"
-                    value={formik.values.canvaUrl}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="https://www.canva.com/design/..."
-                    className={`w-full px-4 py-3 border rounded-lg text-sm font-roboto focus:outline-none focus:ring-2 focus:ring-black/10 ${formik.touched.canvaUrl && formik.errors.canvaUrl
-                      ? "border-red-500"
-                      : "border-[#EEEEEE]"
-                      }`}
-                    style={{ fontWeight: 400 }}
-                  />
-                  {formik.touched.canvaUrl && formik.errors.canvaUrl && (
-                    <p
-                      className="text-sm text-red-600 font-roboto mt-1"
-                      style={{ fontWeight: 400 }}
-                    >
-                      {formik.errors.canvaUrl}
-                    </p>
-                  )}
-                  <p
-                    className="text-xs text-[#595959] font-roboto mt-1"
-                    style={{ fontWeight: 400 }}
-                  >
-                    Link to the Canva template that agents can customize
-                  </p>
-                </div> */}
 
                 <div className="mb-6">
                   <label
@@ -393,8 +565,8 @@ export default function AddTemplateForm({
                   {!previewImages.length ? (
                     <div
                       className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-[#EEEEEE]/50 transition-colors ${formik.touched.previewFiles && formik.errors.previewFiles
-                        ? "border-red-500"
-                        : "border-[#EEEEEE]"
+                          ? "border-red-500"
+                          : "border-[#EEEEEE]"
                         }`}
                     >
                       <input
@@ -446,15 +618,16 @@ export default function AddTemplateForm({
                             className="text-sm font-roboto text-black mb-1"
                             style={{ fontWeight: 500 }}
                           >
-                            {formik.values.previewFiles.length} image
-                            {formik.values.previewFiles.length > 1 ? "s" : ""} selected
+                          
+                            selected
                           </p>
                           <p
                             className="text-xs text-[#595959] font-roboto"
                             style={{ fontWeight: 400 }}
                           >
-                            Only the first image is shown here. All selected images will
-                            be uploaded and one template will be created per image.
+                            Only the first image is shown here. All selected images
+                            will be uploaded and one template will be created per
+                            image.
                           </p>
                         </div>
                       </div>
@@ -483,7 +656,7 @@ export default function AddTemplateForm({
                 </button>
                 <button
                   type="submit"
-                  disabled={formik.isSubmitting || !formik.isValid}
+                  // disabled={formik.isSubmitting || !formik.isValid}
                   className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg font-manrope hover:bg-[#595959] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontWeight: 700 }}
                 >
@@ -500,6 +673,13 @@ export default function AddTemplateForm({
             </form>
           </div>
         </div>
+
+        {/* Add Category Modal */}
+        <AddCategoryModal
+          isOpen={isAddCategoryModalOpen}
+          onClose={() => setIsAddCategoryModalOpen(false)}
+          onSuccess={handleAddCategorySuccess}
+        />
       </div>
     </DashboardLayout>
   );

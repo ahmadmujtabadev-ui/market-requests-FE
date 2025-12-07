@@ -19,67 +19,10 @@ import type { AppDispatch } from '@/redux/store';
 import { fetchTemplatesAsync, deleteTemplateAsync } from '@/services/template/asyncThunk';
 import { selectTemplates } from '@/redux/slices/templateSlice';
 import { LoadingOverlay } from '@/components/loaders/overlayloader';
+import { selectActiveCategoryItems, selectCategoryLoading } from '@/redux/slices/categorySlice';
+import { fetchCategoriesAsync } from '@/services/category/asyncThunk';
 
 type TemplateType = 'residential' | 'commercial';
-
-const RESIDENTIAL_CATEGORIES = [
-  "Guides",
-  "Seller Guide",
-  "Property Brochures",
-  "12 Months Newsletter",
-  "Pre-Listing Checklist",
-  "Vendor List",
-  "Postcard (6*4 inch)",
-  "Postcard (6*4 inch) Congratulations",
-  "Postcard (6*4 inch) Holiday",
-  "Postcard (6*4 inch) Just Listed",
-  "Postcard (6*4 inch) Sold",
-  "Postcard (6*4 inch) Maintenence",
-  "Postcard (6*4 inch) Under Contract",
-  "Postcard (6*4 inch) General",
-  "Postcard (6*4 inch) Intro",
-  "Postcard (6*4 inch) Open House",
-  "Postcard (7*5 inch)",
-  "Postcard (7*5 inch) Congratulations",
-  "Postcard (7*5 inch) Holiday",
-  "Postcard (7*5 inch) Just Listed",
-  "Postcard (7*5 inch) Sold",
-  "Postcard (7*5 inch) Maintenence",
-  "Postcard (7*5 inch) Under Contract",
-  "Postcard (7*5 inch) General",
-  "Postcard (7*5 inch) Intro",
-  "Postcard (7*5 inch) Open House",
-  "Instagram Posts (1080*1080)",
-  "Instagram Posts (1080*1080) About us",
-  "Instagram Posts (1080*1080) General",
-  "Instagram Posts (1080*1080) Tips",
-  "Instagram Posts (1080*1080) Discover",
-  "Instagram Posts (1080*1080) Q&A",
-  "Instagram Posts (1080*1080) Listing",
-  "Instagram Posts (1080*1080) Marketing Updates",
-  "Instagram Posts (1080*1080) Open House",
-  "Instagram Posts (1080*1080) Testominal",
-  "Instagram Stories (1080*1920)",
-  "Instagram Stories (1080*1920) General",
-  "Instagram Stories (1080*1920) Discover",
-  "Instagram Stories (1080*1920) Listing",
-  "Instagram Stories (1080*1920) Marketing Updates",
-  "Instagram Stories (1080*1920) Open House",
-  "Instagram Stories (1080*1920) Testominal",
-  "Flyers",
-];
-
-const COMMERCIAL_CATEGORIES = [
-  'All',
-  'For Sale',
-  'For Lease',
-  'Sold/Leased',
-  'Price Adjustment',
-  'Project Announcements',
-  'Market Reports',
-  'Property Highlights',
-  'Broker Branding',
-];
 
 export default function AdminTemplatesPage() {
   const router = useRouter();
@@ -91,12 +34,31 @@ export default function AdminTemplatesPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<{ id: string; title: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const categoriesFromApi = useSelector(selectActiveCategoryItems);
 
   useEffect(() => {
     dispatch(fetchTemplatesAsync());
+    dispatch(fetchCategoriesAsync());
   }, [dispatch]);
 
-  const categories = selectedType === 'residential' ? RESIDENTIAL_CATEGORIES : COMMERCIAL_CATEGORIES;
+  // Build unique category list from API; "All" first
+  const categories = useMemo(() => {
+    const base = ['All'];
+
+    if (!Array.isArray(categoriesFromApi) || categoriesFromApi.length === 0) {
+      return base;
+    }
+
+    const names = Array.from(
+      new Set(
+        categoriesFromApi
+          .filter((c) => c.isActive)            // only active categories
+          .map((c) => c.name.trim())
+      )
+    ).sort((a, b) => a.localeCompare(b));
+
+    return base.concat(names);
+  }, [categoriesFromApi]);
 
   const filteredTemplates = useMemo(() => {
     const list = Array.isArray(templates) ? templates : [];

@@ -456,7 +456,7 @@ export default function VaRequestDetailPage() {
 
                   {/* Template Preview - Separate Card */}
                   {request.template?.previewUrl && (
-                    <div className="bg-white rounded-lg border-2 border-black p-6 shadow-lg">
+                    <div className="bg-white rounded-lg mt-5 p-6 shadow-lg">
                       <h2
                         className="text-lg text-black font-manrope mb-4"
                         style={{ fontWeight: 700 }}

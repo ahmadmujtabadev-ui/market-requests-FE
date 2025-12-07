@@ -27,7 +27,7 @@ class TemplateService extends HttpService {
   private readonly prefix: string = "/template";
 
   /**
-   * List all templates
+   * List all templatesa
    * GET /api/v1/templates
    */
   list = (params?: { type?: TemplateType; category?: string }): Promise<any> =>

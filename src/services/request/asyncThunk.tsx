@@ -60,9 +60,6 @@ export const fetchRequestByIdAsync = createAsyncThunk(
   }
 );
 
-/**
- * Create new request (agent only)
- */
 export const createRequestAsync = createAsyncThunk<
   any,
   FormData | CreateRequestDto
@@ -78,7 +75,6 @@ export const createRequestAsync = createAsyncThunk<
         typeof FormData !== "undefined" && dto instanceof FormData;
 
       const response = await requestService.create(dto as any, {
-        // add multipart headers only when dto is FormData
         ...(isFormData && {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -101,10 +97,6 @@ export const createRequestAsync = createAsyncThunk<
   }
 );
 
-
-/**
- * Update request (agent can update their own)
- */
 export const updateRequestAsync = createAsyncThunk(
   "request/updateRequest",
   async (

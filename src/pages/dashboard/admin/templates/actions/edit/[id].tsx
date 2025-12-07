@@ -6,15 +6,14 @@ import { useAppDispatch } from '@/hooks/hooks';
 import { fetchTemplateByIdAsync } from '@/services/template/asyncThunk';
 import AddTemplateForm from '../add-template-form';
 import { Template } from '@/types/templates';
+import { LoadingOverlay } from '@/components/loaders/overlayloader';
 
 export default function EditTemplatePage() {
     const router = useRouter();
     const dispatch = useAppDispatch();
     const { id } = router.query;
-    console.log("id", id)
     const [templateId, setTemplateId] = useState<string | null>(null);
-    const [initialTemplate, setInitialTemplate] = useState<Template | null>(null);
-    console.log("initial", initialTemplate)
+    const [initialTemplate, setInitialTemplate] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -38,7 +37,7 @@ export default function EditTemplatePage() {
     }, [router.isReady, id, dispatch]);
 
     
-    if (!templateId || loading) return <div>Loading...</div>;
+    if (!templateId || loading) return <LoadingOverlay isVisible/>;
 
     return (
         <AddTemplateForm

@@ -81,7 +81,6 @@ export default function AdminRequestDetailPage() {
     setIsChangingStatus(true);
     try {
       await dispatch(updateRequestStatusAsync({ id: request.id, status: newStatus }));
-      // Refresh the request data after status change
       dispatch(fetchRequestByIdAsync(request.id));
     } finally {
       setIsChangingStatus(false);

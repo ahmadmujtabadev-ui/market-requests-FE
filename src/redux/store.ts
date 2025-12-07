@@ -5,6 +5,7 @@ import templateReducer from './slices/templateSlice'
 import requestReducer from './slices/requestSlice'
 import userManagementReducer from './slices/userManagementSlice'
 import  adminStatsReducer  from './slices/adminstatsSlice';
+import categoryReducer from './slices/categorySlice'
 
 export const store = configureStore({
   reducer: {
@@ -13,7 +14,8 @@ export const store = configureStore({
     dashboard : dashbordReducer,
     request: requestReducer,
     admin: userManagementReducer,
-    stats: adminStatsReducer
+    stats: adminStatsReducer,
+    category : categoryReducer 
     
   },
 });
