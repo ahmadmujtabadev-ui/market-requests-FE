@@ -19,7 +19,7 @@ import type { AppDispatch } from '@/redux/store';
 import { fetchTemplatesAsync, deleteTemplateAsync } from '@/services/template/asyncThunk';
 import { selectTemplates } from '@/redux/slices/templateSlice';
 import { LoadingOverlay } from '@/components/loaders/overlayloader';
-import { selectActiveCategoryItems, selectCategoryLoading } from '@/redux/slices/categorySlice';
+import { selectActiveCategoryItems } from '@/redux/slices/categorySlice';
 import { fetchCategoriesAsync } from '@/services/category/asyncThunk';
 
 type TemplateType = 'residential' | 'commercial';

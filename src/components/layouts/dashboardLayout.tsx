@@ -87,15 +87,23 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       current: router.pathname === '/dashboard/admin/stat',
       description: 'Analytics & Overview',
     },
+      {
+      name: 'Categories',
+      href: '/dashboard/admin/categories/categories',
+      icon: FolderOpen,
+      current: router.pathname === '/dashboard/admin/categories/categories',
+      description: 'Manage Categories',
+    },
     {
-      name: 'Template Management',
+      name: 'Templates',
       href: '/dashboard/admin/templates/template',
       icon: FolderOpen,
       current: router.pathname === '/dashboard/admin/templates/template',
       description: 'Manage Templates',
     },
+
     {
-      name: 'User Management',
+      name: 'Users',
       href: '/dashboard/admin/userManagement',
       icon: Users,
       current: router.pathname === '/dashboard/admin/users',
