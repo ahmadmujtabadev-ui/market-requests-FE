@@ -60,39 +60,22 @@ export const fetchRequestByIdAsync = createAsyncThunk(
   }
 );
 
-export const createRequestAsync = createAsyncThunk<
-  any,
-  FormData | CreateRequestDto
->(
+export const createRequestAsync = createAsyncThunk<any, FormData | CreateRequestDto>(
   "request/createRequest",
   async (dto, { rejectWithValue }) => {
     try {
       const token = `${ls.get("access_token", { decrypt: true })}`;
-      console.log("token", token);
       HttpService.setToken(token);
 
-      const isFormData =
-        typeof FormData !== "undefined" && dto instanceof FormData;
-
-      const response = await requestService.create(dto as any, {
-        ...(isFormData && {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }),
-      });
+      const response = await requestService.create(dto as any); // no headers override
 
       if (!response?.message) {
-        return rejectWithValue(
-          response.message || "Failed to create request"
-        );
+        return rejectWithValue(response?.message || "Failed to create request");
       }
 
       return response.request || response.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error?.response?.data?.message || "Failed to create request"
-      );
+      return rejectWithValue(error?.response?.data?.message || "Failed to create request");
     }
   }
 );

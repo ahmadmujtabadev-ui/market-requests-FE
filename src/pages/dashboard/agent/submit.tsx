@@ -308,7 +308,7 @@ export default function SubmitRequestPage() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-[#FAFAFA] pb-32">
-        <div className="max-w-5xl mx-auto px-6 lg:px-8 py-8">
+        <div className="w-full mx-auto px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
@@ -321,7 +321,7 @@ export default function SubmitRequestPage() {
 
           {/* Progress Steps */}
           <div className="mb-12">
-            <div className="flex items-center justify-between max-w-3xl mx-auto">
+            <div className="flex items-center justify-between w-full border p-8 border-gray-100 mx-auto">
               <div className="flex flex-col items-center flex-1">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
@@ -395,7 +395,7 @@ export default function SubmitRequestPage() {
           </div>
 
           {/* Form Content */}
-          <div className="max-w-3xl mx-auto">
+          <div className="w-full mx-auto">
             <form onSubmit={handleSubmit}>
               {currentStep === 1 && (
                 <>

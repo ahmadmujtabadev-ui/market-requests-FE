@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { HttpService } from '../index';
+import { HttpService } from "../index";
 
 /** Domain types */
-export type RequestStatus = 'new' | 'progress' | 'revision' | 'completed';
+export type RequestStatus = "new" | "progress" | "revision" | "completed";
 
 export interface Request {
   id: string;
@@ -22,7 +22,7 @@ export interface Request {
     name: string;
     email: string;
   };
-  template : {
+  template: {
     id: string;
     title: string;
     category: string;
@@ -35,7 +35,7 @@ export interface RequestFile {
   id: string;
   requestId: string;
   fileUrl: string;
-  fileType: 'agent_upload' | 'va_completed';
+  fileType: "agent_upload" | "va_completed";
   createdAt: string;
 }
 
@@ -65,69 +65,49 @@ export interface ApiEnvelope<T> {
 }
 
 class RequestService extends HttpService {
-  private readonly prefix: string = '/request';
+  private readonly prefix: string = "/request";
 
-  /**
-   * List all requests (role-based filtering)
-   * GET /api/v1/requests
-   */
   list = (params?: { status?: RequestStatus }): Promise<any> =>
     this.get(this.prefix, { params });
 
-  /**
-   * Get single request by ID
-   * GET /api/v1/requests/:id
-   */
-  getById = (id: string): Promise<any> =>
-    this.get(`${this.prefix}/${id}`, {});
+  getById = (id: string): Promise<any> => this.get(`${this.prefix}/${id}`, {});
 
   /**
-   * Create new request (agent only)
-   * POST /api/v1/requests
-   * Supports both JSON and multipart/form-data
+   * ✅ FIXED: Create new request
+   * - If FormData: DO NOT set Content-Type
    */
-  create = (
-    data: CreateRequestDto | FormData,
-    option: any = {}
-  ): Promise<any> => {
+  create = (data: CreateRequestDto | FormData, option: any = {}): Promise<any> => {
     const isFormData =
-      typeof FormData !== 'undefined' && data instanceof FormData;
+      typeof FormData !== "undefined" && data instanceof FormData;
 
     const finalOptions = {
       ...option,
-      ...(isFormData && {
-        headers: {
-          ...(option.headers || {}),
-          'Content-Type': 'multipart/form-data',
-        },
-      }),
+      headers: {
+        ...(option.headers || {}),
+      },
     };
 
-    return this.post(this.prefix, data, finalOptions);
+    if (isFormData) {
+      // IMPORTANT: allow axios/browser to set boundary
+      delete finalOptions.headers["Content-Type"];
+      delete finalOptions.headers["content-type"];
+    } else {
+      finalOptions.headers["Content-Type"] =
+        finalOptions.headers["Content-Type"] || "application/json";
+    }
+
+    return this.post(this.prefix, data as any, finalOptions);
   };
 
-  /**
-   * Update request (agent can update their own)
-   * PUT /api/v1/requests/:id
-   */
   update = (id: string, data: UpdateRequestDto, option = {}): Promise<any> =>
     this.put(`${this.prefix}/${id}`, data, option);
 
-  /**
-   * Update request status (VA/Admin only)
-   * PUT /api/v1/requests/:id/status
-   */
-  updateStatus = (
-    id: string,
-    status: RequestStatus,
-    option = {}
-  ): Promise<any> =>
+  updateStatus = (id: string, status: RequestStatus, option = {}): Promise<any> =>
     this.put(`${this.prefix}/${id}/status`, { status }, option);
 
   /**
-   * Upload completed file (VA only)
-   * POST /api/v1/requests/:id/files
-   * Accepts FormData with file and fileType
+   * ✅ FIXED: Upload completed file
+   * - If FormData: DO NOT set Content-Type
    */
   uploadFile = (
     id: string,
@@ -135,32 +115,29 @@ class RequestService extends HttpService {
     option: any = {}
   ): Promise<any> => {
     const isFormData =
-      typeof FormData !== 'undefined' && data instanceof FormData;
+      typeof FormData !== "undefined" && data instanceof FormData;
 
     const finalOptions = {
       ...option,
-      ...(isFormData && {
-        headers: {
-          ...(option.headers || {}),
-          'Content-Type': 'multipart/form-data',
-        },
-      }),
+      headers: {
+        ...(option.headers || {}),
+      },
     };
 
-    return this.post(`${this.prefix}/${id}/files`, data, finalOptions);
+    if (isFormData) {
+      delete finalOptions.headers["Content-Type"];
+      delete finalOptions.headers["content-type"];
+    } else {
+      finalOptions.headers["Content-Type"] =
+        finalOptions.headers["Content-Type"] || "application/json";
+    }
+
+    return this.post(`${this.prefix}/${id}/files`, data as any, finalOptions);
   };
 
-  /**
-   * Delete file
-   * DELETE /api/v1/requests/:id/files/:fileId
-   */
   deleteFile = (id: string, fileId: string, option = {}): Promise<any> =>
     this.delete(`${this.prefix}/${id}/files/${fileId}`, option);
 
-  /**
-   * Get request statistics
-   * GET /api/v1/requests/stats
-   */
   getStats = (): Promise<any> => this.get(`${this.prefix}/stats`, {});
 }
 
