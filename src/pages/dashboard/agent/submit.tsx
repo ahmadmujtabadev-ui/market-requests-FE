@@ -403,7 +403,7 @@ export default function SubmitRequestPage() {
                     <label className="block text-sm text-black font-manrope mb-3" style={{ fontWeight: 700 }}>
                       Select Template <span className="text-red-600">*</span>
                     </label>
-                    <select
+                    {/* <select
                       value={selectedTemplateId}
                       onChange={(e) => setSelectedTemplateId(e.target.value)}
                       className="w-full px-4 py-3 border border-[#EEEEEE] rounded-lg text-sm font-roboto focus:outline-none focus:ring-2 focus:ring-black/10"
@@ -416,7 +416,7 @@ export default function SubmitRequestPage() {
                           {template.title} ({template.category})
                         </option>
                       ))}
-                    </select>
+                    </select> */}
 
                     {selectedTemplate && (
                       <div className="mt-4 p-4 bg-[#FAFAFA] rounded-lg">
