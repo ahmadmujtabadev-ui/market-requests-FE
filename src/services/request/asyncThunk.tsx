@@ -121,9 +121,9 @@ export const updateRequestStatusAsync = createAsyncThunk(
       const response = await requestService.updateStatus(id, status);
       console.log("response at 131", response)
 
-      if (response.data.message === "Request status updated") {
+      if (response.message == "Request status updated") {
         console.log("4sucess running")
-        Toast.fire({ icon: "success", title: response.data.message as string });
+        Toast.fire({ icon: "success", title: response.message as string });
         return response.request || response.data.request;
       } else {
         Toast.fire({ icon: "error", title: response.data.message as string });
