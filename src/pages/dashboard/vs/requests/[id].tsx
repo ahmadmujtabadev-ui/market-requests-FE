@@ -758,7 +758,7 @@ export default function VaRequestDetailPage() {
                     >
                       Supported formats: PDF, DOCX, PNG, JPG, MP4
                       <br />
-                      Maximum file size:
+                      Maximum file size: 25 Mb
                     </p>
                   </label>
                 </div>

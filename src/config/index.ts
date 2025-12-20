@@ -7,7 +7,7 @@ interface ConfigType {
 }
 
 const local: ConfigType = {
-  API_ENDPOINT: "https://marketing-requests-be.vercel.app/",
+  API_ENDPOINT: "http://localhost:5000/",
   API_TIMEOUT: 10000,
   MAX_RETRIES: 3,
   DEBUG: true
@@ -29,7 +29,7 @@ API_ENDPOINT:  "https://marketing-requests-be.vercel.app/api/",
 
 const prod: ConfigType = {
   API_ENDPOINT:"https://api.owghub.com/api/", 
-  API_TIMEOUT: 30000,
+  API_TIMEOUT: 60000,
   MAX_RETRIES: 1,
   DEBUG: false,
 };
