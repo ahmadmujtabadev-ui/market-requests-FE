@@ -272,14 +272,14 @@ export default function VaRequestDetailPage() {
 
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
         <div className="w-full mx-auto">
-          <button
+          {/* <button
             onClick={() => router.push('/dashboard/va/requests')}
             className="inline-flex items-center gap-2 text-[#595959] hover:text-black mb-6 font-roboto transition-colors"
             style={{ fontWeight: 500 }}
           >
             <ArrowLeft className="w-5 h-5" />
             Back to Work Queue
-          </button>
+          </button> */}
 
           {/* Header Card */}
           <div className="bg-white rounded-lg border border-[#EEEEEE] p-8 mb-6">
