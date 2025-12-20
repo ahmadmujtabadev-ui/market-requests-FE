@@ -591,7 +591,7 @@ export default function AddTemplateForm({
                           className="text-xs text-[#595959] font-roboto"
                           style={{ fontWeight: 400 }}
                         >
-                          PNG, JPG up to 5MB each
+                          PNG, JPG up to 25MB each
                         </p>
                       </label>
                     </div>
