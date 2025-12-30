@@ -47,7 +47,7 @@ export default function SubmitRequestPage() {
   const searchParams = useSearchParams();
 
   // ===== File validation (20MB per file) =====
-  const MAX_FILE_SIZE_MB = 25;
+  const MAX_FILE_SIZE_MB = 55;
   const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024; // 20 MiB in bytes
 
   const ALLOWED_FILE_TYPES = {
@@ -187,9 +187,6 @@ export default function SubmitRequestPage() {
       errors.forEach((msg) => Toast.fire(msg));
     }
 
-    if (validFiles.length === 0 && errors.length > 0) {
-      Toast.fire('No valid files were uploaded');
-    }
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {

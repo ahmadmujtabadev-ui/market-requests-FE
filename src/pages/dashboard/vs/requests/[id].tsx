@@ -241,13 +241,13 @@ export default function VaRequestDetailPage() {
 
   const agentFiles = request.files?.filter((f: any) => f.fileType === 'agent_upload') || [];
   const completedFiles = request.files?.filter((f: any) => f.fileType === 'va_completed') || [];
-
-  // ✅ Canva links
+  // ✅ Canva links (quick fix with any)
   const canvaFolderUrl =
-    request?.template?.categoryRelation?.canvaFolderUrl || null;
+    (request as any)?.template?.categoryRelation?.canvaFolderUrl ?? null;
 
   const templateCanvaUrl =
-    request?.template?.canvaUrl || null;
+    (request as any)?.template?.canvaUrl ?? null;
+
 
   return (
     <DashboardLayout>
@@ -325,11 +325,10 @@ export default function VaRequestDetailPage() {
                       key={s}
                       type="button"
                       onClick={() => setLocalStatus(s)}
-                      className={`px-4 py-2 rounded-lg text-sm font-manrope border-2 transition-all ${
-                        localStatus === s
+                      className={`px-4 py-2 rounded-lg text-sm font-manrope border-2 transition-all ${localStatus === s
                           ? 'bg-black text-white border-black'
                           : 'bg-white text-[#595959] border-[#EEEEEE] hover:border-black/30'
-                      }`}
+                        }`}
                       style={{ fontWeight: 700 }}
                     >
                       {STATUS_CONFIG[s].label}
@@ -341,11 +340,10 @@ export default function VaRequestDetailPage() {
                     type="button"
                     onClick={handleStatusSave}
                     disabled={statusSaving || !localStatus || localStatus === request.status}
-                    className={`inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${
-                      statusSaving || !localStatus || localStatus === request.status
+                    className={`inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${statusSaving || !localStatus || localStatus === request.status
                         ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed'
                         : 'bg-black text-white hover:bg-[#595959]'
-                    } transition-colors`}
+                      } transition-colors`}
                     style={{ fontWeight: 700 }}
                   >
                     {statusSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -675,9 +673,8 @@ export default function VaRequestDetailPage() {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    dragActive ? 'border-black bg-[#FAFAFA]' : 'border-[#EEEEEE] bg-white hover:border-black/40'
-                  }`}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${dragActive ? 'border-black bg-[#FAFAFA]' : 'border-[#EEEEEE] bg-white hover:border-black/40'
+                    }`}
                 >
                   <input
                     id="completed-file-input"
@@ -702,7 +699,7 @@ export default function VaRequestDetailPage() {
                     <p className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
                       Supported formats: PDF, DOCX, PNG, JPG, MP4
                       <br />
-                      Maximum file size: 25 Mb
+                      Maximum file size: 50 Mb
                     </p>
                   </label>
                 </div>
@@ -733,9 +730,8 @@ export default function VaRequestDetailPage() {
                       type="button"
                       onClick={handleUploadFile}
                       disabled={uploading}
-                      className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${
-                        uploading ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed' : 'bg-black text-white hover:bg-[#595959]'
-                      } transition-colors`}
+                      className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${uploading ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed' : 'bg-black text-white hover:bg-[#595959]'
+                        } transition-colors`}
                       style={{ fontWeight: 700 }}
                     >
                       {uploading && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}

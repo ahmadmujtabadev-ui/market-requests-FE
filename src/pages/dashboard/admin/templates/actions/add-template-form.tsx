@@ -545,7 +545,7 @@ export default function AddTemplateForm({
                           Click to upload one or more images
                         </p>
                         <p className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                          PNG, JPG up to 25MB each
+                          PNG, JPG up to 50MB each
                         </p>
                       </label>
                     </div>
