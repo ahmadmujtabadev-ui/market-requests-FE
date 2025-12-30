@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Plus,
   Edit,
+  ExternalLink,
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -21,7 +22,7 @@ export default function CategoriesPage() {
   const dispatch = useDispatch<AppDispatch>();
   const categories = useSelector(selectCategoryItems);
   const isLoading = useSelector(selectCategoryLoading);
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -34,35 +35,38 @@ export default function CategoriesPage() {
 
   const filteredCategories = useMemo(() => {
     if (!Array.isArray(categories)) return [];
-    
+
     const normalizedSearch = (searchQuery || '').toLowerCase();
-    
-    return categories.filter((category) => {
+
+    return categories.filter((category: any) => {
       if (!category) return false;
-      
+
       // Status filter
       if (statusFilter === 'active' && !category.isActive) return false;
       if (statusFilter === 'inactive' && category.isActive) return false;
-      
+
       // Search filter
       const name = (category.name || '').toLowerCase();
       const description = (category.description || '').toLowerCase();
-      
-      const matchesSearch = !normalizedSearch ||
+      const canva = (category.canvaFolderUrl || '').toLowerCase();
+
+      const matchesSearch =
+        !normalizedSearch ||
         name.includes(normalizedSearch) ||
-        description.includes(normalizedSearch);
-      
+        description.includes(normalizedSearch) ||
+        canva.includes(normalizedSearch);
+
       return matchesSearch;
     });
   }, [categories, searchQuery, statusFilter]);
 
   const categoryCounts = useMemo(() => {
     if (!Array.isArray(categories)) return { total: 0, active: 0, inactive: 0 };
-    
+
     return {
       total: categories.length,
-      active: categories.filter(c => c.isActive).length,
-      inactive: categories.filter(c => !c.isActive).length
+      active: categories.filter((c: any) => c?.isActive).length,
+      inactive: categories.filter((c: any) => c && !c.isActive).length,
     };
   }, [categories]);
 
@@ -97,16 +101,16 @@ export default function CategoriesPage() {
     <DashboardLayout>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=Roboto:wght@100;300;400;500;700;900&display=swap');
-        
+
         .font-manrope {
           font-family: 'Manrope', sans-serif;
         }
-        
+
         .font-roboto {
           font-family: 'Roboto', sans-serif;
         }
       `}</style>
-      
+
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
         <div className="w-full mx-auto">
           {/* Header */}
@@ -119,14 +123,18 @@ export default function CategoriesPage() {
                 Manage template categories
               </p>
             </div>
-            {/* <button
+
+            {/* Optional Add button */}
+            {/*
+            <button
               onClick={() => router.push('/dashboard/admin/categories/add')}
               className="inline-flex items-center gap-2 bg-black text-white px-5 py-3 rounded-lg font-manrope hover:bg-[#595959] transition-colors"
               style={{ fontWeight: 700 }}
             >
               <Plus className="w-5 h-5" />
               Add Category
-            </button> */}
+            </button>
+            */}
           </div>
 
           {/* Stats Cards */}
@@ -213,15 +221,12 @@ export default function CategoriesPage() {
                         <th className="text-left px-6 py-4 text-xs text-black font-manrope" style={{ fontWeight: 700 }}>
                           CATEGORY NAME
                         </th>
-                        {/* <th className="text-left px-6 py-4 text-xs text-black font-manrope" style={{ fontWeight: 700 }}>
-                          DESCRIPTION
-                        </th> */}
                         <th className="text-left px-6 py-4 text-xs text-black font-manrope" style={{ fontWeight: 700 }}>
                           STATUS
                         </th>
-                        {/* <th className="text-left px-6 py-4 text-xs text-black font-manrope" style={{ fontWeight: 700 }}>
-                          TEMPLATES
-                        </th> */}
+                        <th className="text-left px-6 py-4 text-xs text-black font-manrope" style={{ fontWeight: 700 }}>
+                          CANVA FOLDER
+                        </th>
                         <th className="text-left px-6 py-4 text-xs text-black font-manrope" style={{ fontWeight: 700 }}>
                           CREATED
                         </th>
@@ -231,55 +236,87 @@ export default function CategoriesPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredCategories.map((category) => (
-                        <tr key={category.id} className="border-t border-[#EEEEEE] hover:bg-[#EEEEEE]/50 transition-colors">
+                      {filteredCategories.map((category: any) => (
+                        <tr
+                          key={category.id}
+                          className="border-t border-[#EEEEEE] hover:bg-[#EEEEEE]/50 transition-colors"
+                        >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-[#EEEEEE] rounded-lg flex items-center justify-center flex-shrink-0">
                                 <FolderOpen className="w-5 h-5 text-[#595959]" />
                               </div>
-                              <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-                                {category.name}
-                              </p>
+                              <div className="flex flex-col">
+                                <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
+                                  {category.name}
+                                </p>
+                                {category.isLegacy ? (
+                                  <span className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+                                    Legacy (from templates)
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
                           </td>
-                          {/* <td className="px-6 py-4">
-                            <p className="text-sm text-[#595959] font-roboto max-w-xs truncate" style={{ fontWeight: 400 }}>
-                              {category.description || '-'}
-                            </p>
-                          </td> */}
+
                           <td className="px-6 py-4">
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-roboto ${
-                              category.isActive
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-600'
-                            }`} style={{ fontWeight: 600 }}>
+                            <span
+                              className={`inline-block px-3 py-1 rounded-full text-xs font-roboto ${
+                                category.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                              }`}
+                              style={{ fontWeight: 600 }}
+                            >
                               {category.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          {/* <td className="px-6 py-4">
-                            <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                              {category._count?.templates || 0}
-                            </p>
-                          </td> */}
+
+                          <td className="px-6 py-4">
+                            {category?.canvaFolderUrl ? (
+                              <a
+                                href={category.canvaFolderUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#EEEEEE] hover:bg-[#EEEEEE] transition-colors text-sm text-black font-roboto"
+                                title="Open Canva folder"
+                                style={{ fontWeight: 500 }}
+                              >
+                                <ExternalLink className="w-4 h-4 text-[#595959]" />
+                                Open
+                              </a>
+                            ) : (
+                              <span className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+                                Not set
+                              </span>
+                            )}
+                          </td>
+
                           <td className="px-6 py-4">
                             <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
                               {new Date(category.createdAt).toLocaleDateString()}
                             </p>
                           </td>
+
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-end gap-2">
-                              {/* <button
+                              {/* Optional Edit */}
+                              {/*
+                              <button
                                 onClick={() => router.push(`/dashboard/admin/categories/edit/${category.id}`)}
                                 className="p-2 hover:bg-[#EEEEEE] rounded-lg transition-colors"
                                 title="Edit Category"
+                                disabled={category.isLegacy}
                               >
                                 <Edit className="w-4 h-4 text-[#595959]" />
-                              </button> */}
+                              </button>
+                              */}
+
                               <button
                                 onClick={() => openDeleteModal(category.id, category.name)}
-                                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Delete Category"
+                                disabled={!!category.isLegacy}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  category.isLegacy ? 'opacity-40 cursor-not-allowed' : 'hover:bg-red-50'
+                                }`}
+                                title={category.isLegacy ? 'Legacy category cannot be deleted' : 'Delete Category'}
                               >
                                 <Trash2 className="w-4 h-4 text-red-600" />
                               </button>
@@ -309,7 +346,9 @@ export default function CategoriesPage() {
                   Delete Category
                 </h3>
                 <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                  Are you sure you want to delete <span className="font-medium text-black">{categoryToDelete.name}</span>? This action cannot be undone and will affect all associated templates.
+                  Are you sure you want to delete{' '}
+                  <span className="font-medium text-black">{categoryToDelete.name}</span>? This action cannot be undone
+                  and will affect all associated templates.
                 </p>
               </div>
               <button

@@ -65,8 +65,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     rawRole === 'admin'
       ? 'admin'
       : rawRole === 'va' || rawRole === 'virtual_assistant' || rawRole === 'virtual assistant'
-      ? 'va'
-      : 'agent';
+        ? 'va'
+        : 'agent';
 
   const userName: string = profile?.businessName || profile?.name || 'User';
   const userEmail: string = profile?.email || 'user@company.com';
@@ -87,7 +87,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       current: router.pathname === '/dashboard/admin/stat',
       description: 'Analytics & Overview',
     },
-      {
+    {
       name: 'Categories',
       href: '/dashboard/admin/categories/categories',
       icon: FolderOpen,
@@ -126,6 +126,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       current: router.pathname === '/dashboard/admin/requests/requests',
       description: 'View All Requests',
     },
+
+    // ✅ NEW
+    {
+      name: "Transaction Requests",
+      href: "/dashboard/agent/transaction-requests",
+      icon: FileText,
+      current: router.pathname === "/dashboard/agent/transaction-requests",
+      description: "Listing & Offer requests (Monday forms)",
+    },
+
     {
       name: 'Template Library',
       href: '/dashboard/agent/templates',
@@ -156,8 +166,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     userRole === 'admin'
       ? adminNavigation
       : userRole === 'va'
-      ? vaNavigation
-      : agentNavigation;
+        ? vaNavigation
+        : agentNavigation;
 
   interface UserSettingItem {
     name: string;
@@ -257,9 +267,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                           {userEmail}
                         </p>
                         <span
-                          className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${
-                            userRole === 'admin' ? 'bg-black text-white' : 'bg-[#595959] text-white'
-                          }`}
+                          className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${userRole === 'admin' ? 'bg-black text-white' : 'bg-[#595959] text-white'
+                            }`}
                           style={{ fontWeight: 700 }}
                         >
                           {userRole === 'admin' ? 'Admin' : userRole === 'va' ? 'VA' : 'Agent'}
@@ -278,8 +287,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     {userRole === 'admin'
                       ? 'Admin Panel'
                       : userRole === 'va'
-                      ? 'VA Panel'
-                      : 'Main Menu'}
+                        ? 'VA Panel'
+                        : 'Main Menu'}
                   </p>
                   {navigation.map((item) => {
                     const IconComponent = item.icon;
@@ -287,30 +296,26 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       <a
                         key={item.name}
                         href={item.href}
-                        className={`${
-                          item.current
+                        className={`${item.current
                             ? 'bg-black text-white shadow-md'
                             : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                        } group flex items-center px-4 py-3.5 text-sm rounded-lg transition-all duration-200`}
+                          } group flex items-center px-4 py-3.5 text-sm rounded-lg transition-all duration-200`}
                       >
                         <IconComponent
-                          className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                            item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
-                          }`}
+                          className={`mr-3 flex-shrink-0 h-5 w-5 ${item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
+                            }`}
                         />
                         <div className="flex-1">
                           <p
-                            className={`font-manrope ${
-                              item.current ? 'text-white' : 'text-[#595959]'
-                            }`}
+                            className={`font-manrope ${item.current ? 'text-white' : 'text-[#595959]'
+                              }`}
                             style={{ fontWeight: 800 }}
                           >
                             {item.name}
                           </p>
                           <p
-                            className={`text-xs mt-0.5 font-roboto ${
-                              item.current ? 'text-white/80' : 'text-[#595959]'
-                            }`}
+                            className={`text-xs mt-0.5 font-roboto ${item.current ? 'text-white/80' : 'text-[#595959]'
+                              }`}
                             style={{ fontWeight: 300 }}
                           >
                             {item.description}
@@ -337,11 +342,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                             handleLogout();
                           }
                         }}
-                        className={`${
-                          item.name === 'Logout'
+                        className={`${item.name === 'Logout'
                             ? 'text-red-600 hover:bg-red-50'
                             : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                        } group flex items-center px-4 py-3 text-sm rounded-lg transition-all duration-200 cursor-pointer`}
+                          } group flex items-center px-4 py-3 text-sm rounded-lg transition-all duration-200 cursor-pointer`}
                       >
                         <IconComponent className="mr-3 flex-shrink-0 h-5 w-5" />
                         <span className="font-manrope" style={{ fontWeight: 700 }}>
@@ -415,9 +419,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                         {userEmail}
                       </p>
                       <span
-                        className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${
-                          userRole === 'admin' ? 'bg-black text-white' : 'bg-[#595959] text-white'
-                        }`}
+                        className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full font-manrope ${userRole === 'admin' ? 'bg-black text-white' : 'bg-[#595959] text-white'
+                          }`}
                         style={{ fontWeight: 700 }}
                       >
                         {userRole === 'admin' ? 'Admin' : userRole === 'va' ? 'VA' : 'Agent'}
@@ -436,16 +439,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                         key={item.name}
                         href={item.href}
                         onClick={() => setSidebarOpen(false)}
-                        className={`${
-                          item.current
+                        className={`${item.current
                             ? 'bg-black text-white shadow-md'
                             : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                        } group flex items-center px-4 py-3.5 text-base rounded-lg transition-all duration-200`}
+                          } group flex items-center px-4 py-3.5 text-base rounded-lg transition-all duration-200`}
                       >
                         <IconComponent
-                          className={`mr-3 flex-shrink-0 h-6 w-6 ${
-                            item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
-                          }`}
+                          className={`mr-3 flex-shrink-0 h-6 w-6 ${item.current ? 'text-white' : 'text-[#595959] group-hover:text-black'
+                            }`}
                         />
                         <span className="flex-1 font-manrope" style={{ fontWeight: 800 }}>
                           {item.name}
@@ -471,11 +472,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                           }
                           setSidebarOpen(false);
                         }}
-                        className={`${
-                          item.name === 'Logout'
+                        className={`${item.name === 'Logout'
                             ? 'text-red-600 hover:bg-red-50'
                             : 'text-[#595959] hover:bg-[#EEEEEE] hover:text-black'
-                        } group flex items-center px-4 py-3 text-base rounded-lg transition-all duration-200 cursor-pointer`}
+                          } group flex items-center px-4 py-3 text-base rounded-lg transition-all duration-200 cursor-pointer`}
                       >
                         <IconComponent className="mr-3 flex-shrink-0 h-6 w-6" />
                         <span className="font-manrope" style={{ fontWeight: 700 }}>
@@ -516,8 +516,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       (userRole === 'admin'
                         ? 'Admin Dashboard'
                         : userRole === 'va'
-                        ? 'VA Dashboard'
-                        : 'Agent Dashboard')}
+                          ? 'VA Dashboard'
+                          : 'Agent Dashboard')}
                   </h1>
                   <p
                     className="text-sm text-[#595959] mt-1 font-roboto"
@@ -542,9 +542,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                      className={`flex items-center justify-center rounded-full h-10 w-10 transition-all duration-200 shadow-sm ${
-                        profile ? '' : 'bg-black hover:bg-[#595959]'
-                      }`}
+                      className={`flex items-center justify-center rounded-full h-10 w-10 transition-all duration-200 shadow-sm ${profile ? '' : 'bg-black hover:bg-[#595959]'
+                        }`}
                     >
                       {profile.profileImage ? (
                         <img

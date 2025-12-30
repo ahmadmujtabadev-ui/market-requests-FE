@@ -16,7 +16,6 @@ export class HttpService {
   constructor() {
     this.axiosInstance = axios.create({
       baseURL: Config.API_ENDPOINT,
-      timeout: Config.API_TIMEOUT || 30000,
       // IMPORTANT: Do NOT set Content-Type globally
       headers: {
         Accept: "application/json",

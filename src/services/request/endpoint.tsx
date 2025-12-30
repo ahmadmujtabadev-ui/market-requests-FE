@@ -5,6 +5,23 @@ import { HttpService } from "../index";
 /** Domain types */
 export type RequestStatus = "new" | "progress" | "revision" | "completed";
 
+export interface CategoryRelation {
+  id: string;
+  name?: string;
+  canvaFolderUrl?: string | null;
+}
+
+export interface Template {
+  id: string;
+  title: string;
+  category: string;
+  type: string;
+  previewUrl?: string;
+  canvaUrl?: string | null; // ✅ inside template
+  categoryRelation?: CategoryRelation | null; // ✅ inside template
+}
+
+
 export interface Request {
   id: string;
   agentId: string;
@@ -17,17 +34,14 @@ export interface Request {
   status: RequestStatus;
   createdAt: string;
   updatedAt: string;
+
   agent?: {
     id: string;
     name: string;
     email: string;
   };
-  template: {
-    id: string;
-    title: string;
-    category: string;
-    type: string;
-  };
+
+  template?: Template | null; // ✅ make optional to be safe
   files?: RequestFile[];
 }
 

@@ -72,6 +72,7 @@ export const createCategoryAsync = createAsyncThunk(
       description?: string;
       isActive?: boolean;
       order?: number;
+      canvaFolderUrl:string;
     },
     { rejectWithValue }
   ) => {
