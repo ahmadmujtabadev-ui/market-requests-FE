@@ -52,10 +52,10 @@ const Login = () => {
 
   const togglePasswordVisibility = () => setShowPassword((s) => !s);
 
-  const handleGoogleAuth = async () => {
-    // wire up later
-    console.log('Google authentication clicked');
-  };
+  // const handleGoogleAuth = async () => {
+  //   // wire up later
+  //   console.log('Google authentication clicked');
+  // };
 
   const loginUser = async (userData: Partial<LoginUserData>) => {
     if (!userData.email || !userData.password) throw new Error('Email and password are required');
@@ -157,7 +157,7 @@ const Login = () => {
               )}
 
               {/* Google Button (same style as Sign Up) */}
-              <button
+              {/* <button
                 type="button"
                 onClick={handleGoogleAuth}
                 className="w-full bg-white border-2 border-black text-black font-medium py-3 rounded-lg
@@ -170,12 +170,12 @@ const Login = () => {
                   <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
                 Sign in with Google
-              </button>
+              </button> */}
 
               {/* Divider */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="h-px flex-1 bg-[#EEEEEE]" />
-                <span className="text-sm text-[#595959]">or continue with email</span>
+                {/* <span className="text-sm text-[#595959]">or continue with email</span> */}
                 <div className="h-px flex-1 bg-[#EEEEEE]" />
               </div>
 

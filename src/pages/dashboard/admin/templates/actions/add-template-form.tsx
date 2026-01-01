@@ -17,34 +17,27 @@ interface AddCategoryModalProps {
   onSuccess?: () => void;
 }
 
-const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
-  isOpen,
-  onClose,
-  onSuccess,
-}) => {
+const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const dispatch = useAppDispatch();
   const isLoading = useAppSelector(selectCategoryLoading);
 
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    canvaFolderUrl: "", // ✅ NEW
+    canvaFolderUrl: "",
     isActive: true,
     order: 0,
   });
 
   const [errors, setErrors] = useState<{ name?: string; canvaFolderUrl?: string }>({});
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        type === "checkbox" ? checked : type === "number" ? Number(value) : value,
+      [name]: type === "checkbox" ? checked : type === "number" ? Number(value) : value,
     }));
 
     if (errors[name as keyof typeof errors]) {
@@ -54,10 +47,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
 
   const validateForm = () => {
     const newErrors: { name?: string; canvaFolderUrl?: string } = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Category name is required";
-    }
+    if (!formData.name.trim()) newErrors.name = "Category name is required";
 
     const canvaUrl = formData.canvaFolderUrl?.trim();
     if (canvaUrl && !canvaUrl.includes("canva.com")) {
@@ -79,20 +69,20 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
           description: formData.description.trim() || undefined,
           isActive: formData.isActive,
           order: formData.order,
-          canvaFolderUrl: formData.canvaFolderUrl.trim() // ✅ NEW
+          canvaFolderUrl: formData.canvaFolderUrl.trim(),
         })
       ).unwrap();
 
       setFormData({
         name: "",
         description: "",
-        canvaFolderUrl: "", // ✅ NEW
+        canvaFolderUrl: "",
         isActive: true,
         order: 0,
       });
       setErrors({});
 
-      if (onSuccess) onSuccess();
+      onSuccess?.();
       onClose();
     } catch (error) {
       console.error("Failed to create category:", error);
@@ -103,7 +93,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
     setFormData({
       name: "",
       description: "",
-      canvaFolderUrl: "", // ✅ NEW
+      canvaFolderUrl: "",
       isActive: true,
       order: 0,
     });
@@ -130,10 +120,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
             <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-bold text-black mb-2"
-              >
+              <label htmlFor="name" className="block text-sm font-bold text-black mb-2">
                 Category Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -148,18 +135,11 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
                 placeholder="Enter category name"
                 disabled={isLoading}
               />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600 font-roboto">
-                  {errors.name}
-                </p>
-              )}
+              {errors.name && <p className="mt-1 text-sm text-red-600 font-roboto">{errors.name}</p>}
             </div>
 
             <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-bold text-black mb-2"
-              >
+              <label htmlFor="description" className="block text-sm font-bold text-black mb-2">
                 Description
               </label>
               <textarea
@@ -174,12 +154,8 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
               />
             </div>
 
-            {/* ✅ NEW: Canva Folder URL */}
             <div>
-              <label
-                htmlFor="canvaFolderUrl"
-                className="block text-sm font-bold text-black mb-2"
-              >
+              <label htmlFor="canvaFolderUrl" className="block text-sm font-bold text-black mb-2">
                 Canva Folder URL <span className="text-[#595959]">(optional)</span>
               </label>
               <input
@@ -195,16 +171,12 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
                 disabled={isLoading}
               />
               {errors.canvaFolderUrl && (
-                <p className="mt-1 text-sm text-red-600 font-roboto">
-                  {errors.canvaFolderUrl}
-                </p>
+                <p className="mt-1 text-sm text-red-600 font-roboto">{errors.canvaFolderUrl}</p>
               )}
               <p className="mt-1 text-xs text-[#595959] font-roboto">
                 This will be saved as <span className="text-black">canvaFolderUrl</span> in the category.
               </p>
             </div>
-
-            {/* order / isActive optional blocks kept as-is commented */}
           </div>
 
           <div className="flex justify-end gap-3 mt-6">
@@ -254,18 +226,17 @@ interface AddTemplateFormProps {
   initialTemplate?: Template | null;
 }
 
-export default function AddTemplateForm({
-  mode,
-  templateId,
-  initialTemplate,
-}: AddTemplateFormProps) {
+export default function AddTemplateForm({ mode, templateId, initialTemplate }: AddTemplateFormProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const categories = useAppSelector(selectCategoryItems);
   const categoriesLoading = useAppSelector(selectCategoryLoading);
 
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [isRemovingPreview, setIsRemovingPreview] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+
   const isEdit = mode === "edit";
 
   useEffect(() => {
@@ -273,10 +244,7 @@ export default function AddTemplateForm({
   }, [dispatch]);
 
   const validationSchema = Yup.object({
-    title: Yup.string()
-      .required("Template title is required")
-      .trim()
-      .min(3, "Title must be at least 3 characters"),
+    title: Yup.string().required("Template title is required").trim().min(3, "Title must be at least 3 characters"),
     categoryId: Yup.string().required("Category is required"),
   });
 
@@ -292,6 +260,8 @@ export default function AddTemplateForm({
     validationSchema,
     onSubmit: async (values, { setSubmitting }) => {
       try {
+        if (isPreviewLoading || isRemovingPreview) return;
+
         if (isEdit && templateId) {
           const fd = new FormData();
           fd.append("title", values.title.trim());
@@ -331,8 +301,7 @@ export default function AddTemplateForm({
 
     if (!categoryId && (initialTemplate as any).category && categories.length) {
       const match = categories.find(
-        (c) =>
-          c.name.toLowerCase() === (initialTemplate as any).category.toLowerCase()
+        (c) => c.name.toLowerCase() === (initialTemplate as any).category.toLowerCase()
       );
       if (match) categoryId = match.id;
     }
@@ -345,32 +314,60 @@ export default function AddTemplateForm({
       previewFiles: [],
     });
 
-    if (initialTemplate.previewUrl) {
-      setPreviewImages([initialTemplate.previewUrl]);
-    }
+    if (initialTemplate.previewUrl) setPreviewImages([initialTemplate.previewUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEdit, initialTemplate, categories]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = Array.from(event.target.files || []);
     formik.setFieldValue("previewFiles", fileList);
 
-    const readers: Promise<string>[] = fileList
-      .slice(0, 4)
-      .map(
-        (file) =>
-          new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(file);
-          })
+    if (!fileList.length) {
+      setPreviewImages([]);
+      setIsPreviewLoading(false);
+      return;
+    }
+
+    setIsPreviewLoading(true);
+
+    try {
+      const urls = await Promise.all(
+        fileList.slice(0, 4).map(
+          (file) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = () => reject(new Error("Failed to read image"));
+              reader.readAsDataURL(file);
+            })
+        )
       );
 
-    Promise.all(readers).then((urls) => setPreviewImages(urls));
+      setPreviewImages(urls);
+    } catch (err) {
+      console.error(err);
+      setPreviewImages([]);
+    } finally {
+      setIsPreviewLoading(false);
+      event.target.value = "";
+    }
   };
 
-  const removePreview = () => {
+  const removePreview = async () => {
+    if (isRemovingPreview) return;
+
+    setIsRemovingPreview(true);
+    setIsPreviewLoading(false);
+
     formik.setFieldValue("previewFiles", []);
     setPreviewImages([]);
+
+    const input = document.getElementById("preview") as HTMLInputElement | null;
+    if (input) input.value = "";
+
+    requestAnimationFrame(() => {
+      setIsRemovingPreview(false);
+    });
   };
 
   const handleTypeChange = (type: "residential" | "commercial") => {
@@ -378,13 +375,8 @@ export default function AddTemplateForm({
     formik.setFieldValue("categoryId", "");
   };
 
-  const handleBack = () => {
-    router.push("/dashboard/admin/templates/template");
-  };
-
-  const handleAddCategorySuccess = () => {
-    dispatch(fetchCategoriesAsync());
-  };
+  const handleBack = () => router.push("/dashboard/admin/templates/template");
+  const handleAddCategorySuccess = () => dispatch(fetchCategoriesAsync());
 
   return (
     <DashboardLayout>
@@ -413,7 +405,9 @@ export default function AddTemplateForm({
               </h1>
 
               <p className="text-base text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                {isEdit ? "Update this marketing template for agents" : "Create one or more marketing templates for agents"}
+                {isEdit
+                  ? "Update this marketing template for agents"
+                  : "Create one or more marketing templates for agents"}
               </p>
             </div>
 
@@ -428,7 +422,9 @@ export default function AddTemplateForm({
                       type="button"
                       onClick={() => handleTypeChange("residential")}
                       className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${
-                        formik.values.type === "residential" ? "bg-black text-white shadow-sm" : "text-[#595959] hover:text-black"
+                        formik.values.type === "residential"
+                          ? "bg-black text-white shadow-sm"
+                          : "text-[#595959] hover:text-black"
                       }`}
                       style={{ fontWeight: 700 }}
                     >
@@ -439,7 +435,9 @@ export default function AddTemplateForm({
                       type="button"
                       onClick={() => handleTypeChange("commercial")}
                       className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-manrope transition-all ${
-                        formik.values.type === "commercial" ? "bg-black text-white shadow-sm" : "text-[#595959] hover:text-black"
+                        formik.values.type === "commercial"
+                          ? "bg-black text-white shadow-sm"
+                          : "text-[#595959] hover:text-black"
                       }`}
                       style={{ fontWeight: 700 }}
                     >
@@ -501,9 +499,7 @@ export default function AddTemplateForm({
                     }`}
                     style={{ fontWeight: 400 }}
                   >
-                    <option value="">
-                      {categoriesLoading ? "Loading categories..." : "Select a category"}
-                    </option>
+                    <option value="">{categoriesLoading ? "Loading categories..." : "Select a category"}</option>
                     {categories?.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
@@ -525,10 +521,18 @@ export default function AddTemplateForm({
 
                   {!previewImages.length ? (
                     <div
-                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-[#EEEEEE]/50 transition-colors ${
-                        formik.touched.previewFiles && (formik.errors.previewFiles as any) ? "border-red-500" : "border-[#EEEEEE]"
+                      className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-[#EEEEEE]/50 transition-colors ${
+                        formik.touched.previewFiles && (formik.errors.previewFiles as any)
+                          ? "border-red-500"
+                          : "border-[#EEEEEE]"
                       }`}
                     >
+                      {isPreviewLoading || isRemovingPreview && (
+                        <div className="absolute inset-0 z-10 rounded-lg bg-white/70 backdrop-blur-[1px] flex items-center justify-center">
+                          <LoadingOverlay isVisible />
+                        </div>
+                      )}
+
                       <input
                         type="file"
                         id="preview"
@@ -538,11 +542,18 @@ export default function AddTemplateForm({
                         onChange={handleFileChange}
                         onBlur={formik.handleBlur}
                         className="hidden"
+                        disabled={isPreviewLoading || isRemovingPreview}
                       />
-                      <label htmlFor="preview" className="cursor-pointer">
+
+                      <label
+                        htmlFor="preview"
+                        className={`cursor-pointer ${
+                          isPreviewLoading || isRemovingPreview ? "pointer-events-none opacity-60" : ""
+                        }`}
+                      >
                         <Upload className="w-12 h-12 text-[#595959] mx-auto mb-4" />
                         <p className="text-sm text-black font-roboto mb-1" style={{ fontWeight: 500 }}>
-                          Click to upload one or more images
+                          {isPreviewLoading ? "Processing images..." : "Click to upload one or more images"}
                         </p>
                         <p className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
                           PNG, JPG up to 50MB each
@@ -551,15 +562,22 @@ export default function AddTemplateForm({
                     </div>
                   ) : (
                     <div className="relative border border-[#EEEEEE] rounded-lg p-4">
+                      {(isPreviewLoading || isRemovingPreview) && (
+                        <div className="absolute inset-0 z-10 rounded-lg bg-white/70 backdrop-blur-[1px] flex items-center justify-center">
+                          <LoadingOverlay isVisible />
+                        </div>
+                      )}
+
                       <button
                         type="button"
                         onClick={removePreview}
-                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors z-10"
+                        disabled={isPreviewLoading || isRemovingPreview}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors z-20 disabled:opacity-60"
                       >
                         <X className="w-4 h-4" />
                       </button>
 
-                      <div className="flex items-center gap-4">
+                      <div className={`flex items-center gap-4 ${isPreviewLoading || isRemovingPreview ? "opacity-60" : ""}`}>
                         {previewImages[0] && (
                           <img
                             src={previewImages[0]}
@@ -572,7 +590,8 @@ export default function AddTemplateForm({
                             selected
                           </p>
                           <p className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                            Only the first image is shown here. All selected images will be uploaded and one template will be created per image.
+                            Only the first image is shown here. All selected images will be uploaded and one template
+                            will be created per image.
                           </p>
                         </div>
                       </div>
@@ -593,6 +612,7 @@ export default function AddTemplateForm({
 
                 <button
                   type="submit"
+                  disabled={formik.isSubmitting || isPreviewLoading || isRemovingPreview}
                   className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg font-manrope hover:bg-[#595959] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontWeight: 700 }}
                 >
@@ -610,7 +630,6 @@ export default function AddTemplateForm({
           </div>
         </div>
 
-        {/* Add Category Modal */}
         <AddCategoryModal
           isOpen={isAddCategoryModalOpen}
           onClose={() => setIsAddCategoryModalOpen(false)}
