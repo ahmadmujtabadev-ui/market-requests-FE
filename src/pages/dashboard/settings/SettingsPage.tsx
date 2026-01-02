@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Formik, Field, FieldArray } from 'formik';
 import * as Yup from 'yup';
+import Toast from '@/components/Toast';
 import { DashboardLayout } from '@/components/layouts';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { deleteUserMeAsync, fetchUserMeAsync, updateUserMeAsync } from '@/services/auth/asyncThunk';
@@ -27,7 +28,7 @@ const validationSchema = Yup.object({
 const SettingsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { profile } = useAppSelector(selectUser);
-const [profileImage, setProfileImage] = useState<string | null | undefined>(null);
+  const [profileImage, setProfileImage] = useState<string | null | undefined>(null);
 
   const initialValues = {
     username: '',
@@ -86,9 +87,32 @@ const [profileImage, setProfileImage] = useState<string | null | undefined>(null
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (1 MB = 1,048,576 bytes)
+      const maxSize = 1 * 1024 * 1024; // 1 MB in bytes
+      
+      if (file.size > maxSize) {
+        Toast.fire({
+          icon: 'error',
+          title: 'Image size must be less than 1 MB. Please choose a smaller image.',
+        });
+        // Clear the input
+        e.target.value = '';
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImage(reader.result as string);
+        Toast.fire({
+          icon: 'success',
+          title: 'Profile image uploaded successfully!',
+        });
+      };
+      reader.onerror = () => {
+        Toast.fire({
+          icon: 'error',
+          title: 'Failed to read image file. Please try again.',
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -96,6 +120,10 @@ const [profileImage, setProfileImage] = useState<string | null | undefined>(null
 
   const handleDeleteImage = () => {
     setProfileImage(null);
+    Toast.fire({
+      icon: 'success',
+      title: 'Profile image removed successfully!',
+    });
   };
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -116,9 +144,16 @@ const [profileImage, setProfileImage] = useState<string | null | undefined>(null
 
     try {
       await dispatch(updateUserMeAsync(payload as any)).unwrap();
-      // Optional: show toast / success UI
+      Toast.fire({
+        icon: 'success',
+        title: 'Profile updated successfully!',
+      });
     } catch (err: any) {
       console.error('Update profile failed:', err);
+      Toast.fire({
+        icon: 'error',
+        title: err?.message || 'Failed to update profile. Please try again.',
+      });
     }
   };
 
@@ -130,8 +165,16 @@ const [profileImage, setProfileImage] = useState<string | null | undefined>(null
 
     try {
       await dispatch(deleteUserMeAsync() as any).unwrap();
+      Toast.fire({
+        icon: 'success',
+        title: 'Account deleted successfully',
+      });
     } catch (err: any) {
       console.error('Delete account failed:', err);
+      Toast.fire({
+        icon: 'error',
+        title: err?.message || 'Failed to delete account. Please try again.',
+      });
     }
   };
 
@@ -210,6 +253,9 @@ const [profileImage, setProfileImage] = useState<string | null | undefined>(null
                           Delete
                         </button>
                       </div>
+                      <p className="text-xs text-[#595959] mt-2 font-roboto">
+                        Maximum file size: 1 MB
+                      </p>
                     </div>
                   </div>
                 </div>
