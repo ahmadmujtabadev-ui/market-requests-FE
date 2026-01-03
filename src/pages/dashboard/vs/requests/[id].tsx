@@ -1,5 +1,3 @@
-
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { JSX, useEffect, useMemo, useState } from "react";
@@ -25,7 +23,10 @@ import {
   updateRequestStatusAsync,
   uploadCompletedFileAsync,
 } from "@/services/request/asyncThunk";
-import { selectSelectedRequest, selectRequestLoading } from "@/redux/slices/requestSlice";
+import {
+  selectSelectedRequest,
+  selectRequestLoading,
+} from "@/redux/slices/requestSlice";
 import type { RequestStatus } from "@/services/request/endpoint";
 import { LoadingOverlay } from "@/components/loaders/overlayloader";
 import { API_ENDPOINT } from "@/config";
@@ -70,7 +71,9 @@ const STATUS_ORDER: RequestStatus[] = ["new", "progress", "revision", "completed
 function StatusBadge({ status }: { status: RequestStatus }) {
   const config = STATUS_CONFIG[status];
   return (
-    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${config.bgColor} ${config.textColor}`}>
+    <div
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${config.bgColor} ${config.textColor}`}
+    >
       {config.icon}
       <span className="text-base font-manrope" style={{ fontWeight: 700 }}>
         {config.label}
@@ -97,11 +100,16 @@ export default function VaRequestDetailPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
-  // ✅ NEW: UI loaders for selecting/removing file (client-side)
+  // ✅ UI loaders for selecting/removing file (client-side)
   const [isSelectingFile, setIsSelectingFile] = useState(false);
   const [isRemovingFile, setIsRemovingFile] = useState(false);
 
-  // ✅ NEW: Upload area overlay (covers selecting/removing/uploading)
+  // ✅ Canva template link (required when status completed)
+  const [canvaTemplateUrlInput, setCanvaTemplateUrlInput] = useState("");
+  console.log("canvaTemplate", canvaTemplateUrlInput)
+  const [canvaInputError, setCanvaInputError] = useState<string | null>(null);
+
+  // ✅ Upload area overlay (covers selecting/removing/uploading)
   const isUploadOverlayVisible = useMemo(
     () => uploading || isSelectingFile || isRemovingFile,
     [uploading, isSelectingFile, isRemovingFile]
@@ -117,6 +125,10 @@ export default function VaRequestDetailPage() {
     if (request) {
       setLocalStatus(request.status);
       setSelectedFile(null);
+
+      // ✅ hydrate canva link from request if exists
+      setCanvaTemplateUrlInput((request as any)?.canvaTemplateUrl || "");
+      setCanvaInputError(null);
     }
   }, [request]);
 
@@ -128,11 +140,44 @@ export default function VaRequestDetailPage() {
     }
   };
 
+  const isValidHttpUrl = (value: string) => {
+    const v = value.trim();
+    if (!v) return false;
+    try {
+      const u = new URL(v);
+      return u.protocol === "http:" || u.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
   const handleStatusSave = async () => {
     if (!request || !localStatus || localStatus === request.status) return;
+
+    // ✅ If marking completed: require canva link
+    if (localStatus === "completed") {
+      const v = canvaTemplateUrlInput.trim();
+      if (!isValidHttpUrl(v)) {
+        setCanvaInputError("Please add a valid Canva link (https://...) before completing.");
+        return;
+      }
+      setCanvaInputError(null);
+    } else {
+      setCanvaInputError(null);
+    }
+
     setStatusSaving(true);
     try {
-      await dispatch(updateRequestStatusAsync({ id: request.id, status: localStatus })).unwrap();
+      await dispatch(
+        updateRequestStatusAsync({
+          id: request.id,
+          status: localStatus,
+          ...(localStatus === "completed"
+            ? { canvaTemplateUrl: canvaTemplateUrlInput.trim() }
+            : {}),
+        } as any)
+      ).unwrap();
+
       dispatch(fetchRequestByIdAsync(request.id));
     } catch (e: any) {
       console.log(e);
@@ -141,7 +186,7 @@ export default function VaRequestDetailPage() {
     }
   };
 
-  // ✅ NEW: unified file-setter with loader
+  // ✅ unified file-setter with loader
   const setFileWithLoader = async (file: File | null) => {
     setIsSelectingFile(true);
     try {
@@ -181,7 +226,7 @@ export default function VaRequestDetailPage() {
     if (file) await setFileWithLoader(file);
   };
 
-  // ✅ NEW: remove selected file with loader + next paint
+  // ✅ remove selected file with loader + next paint
   const handleRemoveSelectedFile = async () => {
     if (isRemovingFile) return;
     setIsRemovingFile(true);
@@ -281,6 +326,8 @@ export default function VaRequestDetailPage() {
   const canvaFolderUrl = (request as any)?.template?.categoryRelation?.canvaFolderUrl ?? null;
   const templateCanvaUrl = (request as any)?.template?.canvaUrl ?? null;
 
+  const canvaTemplateUrlSaved = (request as any)?.canvaTemplateUrl ?? null;
+
   return (
     <DashboardLayout>
       <style jsx global>{`
@@ -349,6 +396,7 @@ export default function VaRequestDetailPage() {
               <label className="block text-sm text-black font-manrope mb-3" style={{ fontWeight: 700 }}>
                 Update Status
               </label>
+
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap gap-2">
                   {STATUS_ORDER.map((s) => (
@@ -367,6 +415,68 @@ export default function VaRequestDetailPage() {
                     </button>
                   ))}
                 </div>
+
+                {/* ✅ NEW: Canva link appears ONLY when Completed selected */}
+                {localStatus === "completed" && (
+                  <div className="w-full max-w-2xl">
+                    <label className="block text-sm text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
+                      Canva Template Link (Required)
+                    </label>
+
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="url"
+                        value={canvaTemplateUrlInput}
+                        onChange={(e) => setCanvaTemplateUrlInput(e.target.value)}
+                        placeholder="https://www.canva.com/design/..."
+                        className="h-10 w-full rounded-lg border border-[#EEEEEE] px-3 text-[14px] font-roboto focus:outline-none focus:ring-2 focus:ring-black/10"
+                        style={{ fontWeight: 500 }}
+                        disabled={statusSaving}
+                      />
+
+                      {canvaTemplateUrlInput?.trim() && isValidHttpUrl(canvaTemplateUrlInput) && (
+                        <a
+                          href={canvaTemplateUrlInput.trim()}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 px-4 h-10 rounded-lg bg-black text-white font-manrope hover:bg-[#595959] transition-colors whitespace-nowrap"
+                          style={{ fontWeight: 700 }}
+                          title="Open Canva link"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Open
+                        </a>
+                      )}
+                    </div>
+
+                    {canvaInputError && (
+                      <p className="mt-2 text-sm text-red-600 font-roboto" style={{ fontWeight: 400 }}>
+                        {canvaInputError}
+                      </p>
+                    )}
+
+                    {/* ✅ Show saved link (if already saved) */}
+                    {canvaTemplateUrlSaved && isValidHttpUrl(canvaTemplateUrlSaved) && (
+                      <div className="mt-3">
+                        <p className="text-xs text-[#595959] font-roboto mb-2" style={{ fontWeight: 400 }}>
+                          Saved Canva Template Link
+                        </p>
+                        <a
+                          href={String(canvaTemplateUrlSaved)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#EEEEEE] hover:bg-white transition-colors text-sm text-black font-roboto break-all"
+                          style={{ fontWeight: 500 }}
+                          title="Open saved Canva template link"
+                        >
+                          <ExternalLink className="w-4 h-4 text-[#595959]" />
+                          Open Canva Template
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3 flex-wrap">
                   <button
                     type="button"
@@ -383,10 +493,7 @@ export default function VaRequestDetailPage() {
                     Save Status
                   </button>
 
-                  <div
-                    className="flex items-center gap-2 text-sm text-[#595959] font-roboto"
-                    style={{ fontWeight: 400 }}
-                  >
+                  <div className="flex items-center gap-2 text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
                     Current: <StatusBadge status={request.status} />
                   </div>
                 </div>
@@ -507,6 +614,7 @@ export default function VaRequestDetailPage() {
                     </div>
                   </div>
 
+                  {/* ✅ DO NOT REMOVE TEMPLATE PREVIEW */}
                   {request.template?.previewUrl && (
                     <div className="bg-white rounded-lg mt-5 p-6 shadow-lg">
                       <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
@@ -611,10 +719,7 @@ export default function VaRequestDetailPage() {
                     Instructions / Notes
                   </h2>
                   <div className="p-4 bg-[#EEEEEE] rounded-lg">
-                    <p
-                      className="text-sm text-[#595959] font-roboto whitespace-pre-wrap"
-                      style={{ fontWeight: 400 }}
-                    >
+                    <p className="text-sm text-[#595959] font-roboto whitespace-pre-wrap" style={{ fontWeight: 400 }}>
                       {request.notes}
                     </p>
                   </div>
@@ -722,9 +827,7 @@ export default function VaRequestDetailPage() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    dragActive
-                      ? "border-black bg-[#FAFAFA]"
-                      : "border-[#EEEEEE] bg-white hover:border-black/40"
+                    dragActive ? "border-black bg-[#FAFAFA]" : "border-[#EEEEEE] bg-white hover:border-black/40"
                   }`}
                 >
                   {isUploadOverlayVisible && (
@@ -744,9 +847,7 @@ export default function VaRequestDetailPage() {
 
                   <label
                     htmlFor="completed-file-input"
-                    className={`block cursor-pointer ${
-                      isUploadOverlayVisible ? "pointer-events-none opacity-60" : ""
-                    }`}
+                    className={`block cursor-pointer ${isUploadOverlayVisible ? "pointer-events-none opacity-60" : ""}`}
                   >
                     <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-[#EEEEEE] flex items-center justify-center">
                       <UploadCloud className="w-8 h-8 text-[#595959]" />
@@ -827,753 +928,3 @@ export default function VaRequestDetailPage() {
     </DashboardLayout>
   );
 }
-
-// /* eslint-disable @typescript-eslint/no-explicit-any */
-
-// import React, { JSX, useEffect, useState } from 'react';
-// import { DashboardLayout } from '@/components/layouts';
-// import {
-//   Clock,
-//   FileText,
-//   CheckCircle,
-//   AlertCircle,
-//   Calendar,
-//   X,
-//   Loader2,
-//   UploadCloud,
-//   User,
-//   Layers,
-//   ExternalLink,
-// } from 'lucide-react';
-// import { useRouter } from 'next/router';
-// import { useDispatch, useSelector } from 'react-redux';
-// import type { AppDispatch } from '@/redux/store';
-// import {
-//   fetchRequestByIdAsync,
-//   updateRequestStatusAsync,
-//   uploadCompletedFileAsync,
-// } from '@/services/request/asyncThunk';
-// import {
-//   selectSelectedRequest,
-//   selectRequestLoading,
-// } from '@/redux/slices/requestSlice';
-// import type { RequestStatus } from '@/services/request/endpoint';
-// import { LoadingOverlay } from '@/components/loaders/overlayloader';
-// import { API_ENDPOINT } from '@/config';
-
-// const STATUS_CONFIG: Record<
-//   RequestStatus,
-//   {
-//     label: string;
-//     bgColor: string;
-//     textColor: string;
-//     icon: JSX.Element;
-//   }
-// > = {
-//   new: {
-//     label: 'New',
-//     bgColor: 'bg-[#EEEEEE]',
-//     textColor: 'text-black',
-//     icon: <Clock className="w-5 h-5" />,
-//   },
-//   progress: {
-//     label: 'In Progress',
-//     bgColor: 'bg-black',
-//     textColor: 'text-white',
-//     icon: <FileText className="w-5 h-5" />,
-//   },
-//   revision: {
-//     label: 'Revision Needed',
-//     bgColor: 'bg-[#595959]',
-//     textColor: 'text-white',
-//     icon: <AlertCircle className="w-5 h-5" />,
-//   },
-//   completed: {
-//     label: 'Completed',
-//     bgColor: 'bg-black',
-//     textColor: 'text-white',
-//     icon: <CheckCircle className="w-5 h-5" />,
-//   },
-// };
-
-// const STATUS_ORDER: RequestStatus[] = ['new', 'progress', 'revision', 'completed'];
-
-// function StatusBadge({ status }: { status: RequestStatus }) {
-//   const config = STATUS_CONFIG[status];
-//   return (
-//     <div
-//       className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${config.bgColor} ${config.textColor}`}
-//     >
-//       {config.icon}
-//       <span className="text-base font-manrope" style={{ fontWeight: 700 }}>
-//         {config.label}
-//       </span>
-//     </div>
-//   );
-// }
-
-// export default function VaRequestDetailPage() {
-//   const router = useRouter();
-//   const dispatch = useDispatch<AppDispatch>();
-//   const { id } = router.query;
-
-//   const request = useSelector(selectSelectedRequest);
-//   const isLoading = useSelector(selectRequestLoading);
-
-//   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
-//   console.log(downloadingFiles);
-
-//   const [localStatus, setLocalStatus] = useState<RequestStatus | null>(null);
-//   const [statusSaving, setStatusSaving] = useState(false);
-//   const [uploading, setUploading] = useState(false);
-//   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-//   const [dragActive, setDragActive] = useState(false);
-
-//   useEffect(() => {
-//     if (id && typeof id === 'string') {
-//       dispatch(fetchRequestByIdAsync(id));
-//     }
-//   }, [dispatch, id]);
-
-//   useEffect(() => {
-//     if (request) {
-//       setLocalStatus(request.status);
-//       setSelectedFile(null);
-//     }
-//   }, [request]);
-
-//   const getFileName = (url: string) => {
-//     try {
-//       return url.split('/').pop() || 'file';
-//     } catch {
-//       return 'file';
-//     }
-//   };
-
-//   const handleStatusSave = async () => {
-//     if (!request || !localStatus || localStatus === request.status) return;
-//     setStatusSaving(true);
-//     try {
-//       await dispatch(
-//         updateRequestStatusAsync({ id: request.id, status: localStatus })
-//       ).unwrap();
-//       dispatch(fetchRequestByIdAsync(request.id));
-//     } catch (e: any) {
-//       console.log(e);
-//     } finally {
-//       setStatusSaving(false);
-//     }
-//   };
-
-//   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     const file = e.target.files?.[0];
-//     if (file) {
-//       setSelectedFile(file);
-//     }
-//   };
-
-//   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-//     e.preventDefault();
-//     e.stopPropagation();
-//     setDragActive(true);
-//   };
-
-//   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-//     e.preventDefault();
-//     e.stopPropagation();
-//     setDragActive(false);
-//   };
-
-//   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-//     e.preventDefault();
-//     e.stopPropagation();
-//     setDragActive(false);
-//     const file = e.dataTransfer.files?.[0];
-//     if (file) {
-//       setSelectedFile(file);
-//     }
-//   };
-
-//   const handleUploadFile = async () => {
-//     if (!selectedFile || !request) return;
-//     setUploading(true);
-//     try {
-//       const formData = new FormData();
-//       formData.append('file', selectedFile);
-//       formData.append('fileType', 'va_completed');
-
-//       await dispatch(
-//         uploadCompletedFileAsync({
-//           id: request.id,
-//           formData,
-//         })
-//       ).unwrap();
-
-//       dispatch(fetchRequestByIdAsync(request.id));
-//       setSelectedFile(null);
-//     } catch (e: any) {
-//       console.log(e);
-//     } finally {
-//       setUploading(false);
-//     }
-//   };
-
-//   const handleDownload = async (fileUrl: string, fileId: string) => {
-//     setDownloadingFiles(prev => new Set(prev).add(fileId));
-
-//     try {
-//       const downloadUrl = `${API_ENDPOINT}request/download/file?fileUrl=${encodeURIComponent(fileUrl)}`;
-//       window.location.href = downloadUrl;
-
-//       setTimeout(() => {
-//         setDownloadingFiles(prev => {
-//           const newSet = new Set(prev);
-//           newSet.delete(fileId);
-//           return newSet;
-//         });
-//       }, 2000);
-//     } catch (error) {
-//       console.error('Download failed:', error);
-//       setDownloadingFiles(prev => {
-//         const newSet = new Set(prev);
-//         newSet.delete(fileId);
-//         return newSet;
-//       });
-//     }
-//   };
-
-//   if (isLoading) {
-//     return (
-//       <DashboardLayout>
-//         <LoadingOverlay isVisible />
-//       </DashboardLayout>
-//     );
-//   }
-
-//   if (!request) {
-//     return (
-//       <DashboardLayout>
-//         <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
-//           <div className="w-full max-w-5xl mx-auto">
-//             <div className="flex items-center justify-center py-20">
-//               <div className="text-center">
-//                 <FileText className="w-12 h-12 text-[#595959] mx-auto mb-4" />
-//                 <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-//                   Request not found
-//                 </p>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </DashboardLayout>
-//     );
-//   }
-
-//   const agentFiles = request.files?.filter((f: any) => f.fileType === 'agent_upload') || [];
-//   const completedFiles = request.files?.filter((f: any) => f.fileType === 'va_completed') || [];
-//   // ✅ Canva links (quick fix with any)
-//   const canvaFolderUrl =
-//     (request as any)?.template?.categoryRelation?.canvaFolderUrl ?? null;
-
-//   const templateCanvaUrl =
-//     (request as any)?.template?.canvaUrl ?? null;
-
-
-//   return (
-//     <DashboardLayout>
-//       <style jsx global>{`
-//         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=Roboto:wght@100;300;400;500;700;900&display=swap');
-
-//         .font-manrope {
-//           font-family: 'Manrope', sans-serif;
-//         }
-
-//         .font-roboto {
-//           font-family: 'Roboto', sans-serif;
-//         }
-//       `}</style>
-
-//       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
-//         <div className="w-full mx-auto">
-//           {/* Header Card */}
-//           <div className="bg-white rounded-lg border border-[#EEEEEE] p-8 mb-6">
-//             <div className="flex items-start justify-between mb-6 gap-4">
-//               <div className="flex-1">
-//                 <h1 className="text-3xl text-black font-manrope mb-3" style={{ fontWeight: 800 }}>
-//                   {request.projectTitle}
-//                 </h1>
-//                 <div
-//                   className="flex items-center gap-3 flex-wrap text-sm text-[#595959] font-roboto"
-//                   style={{ fontWeight: 400 }}
-//                 >
-//                   <span>Request ID: {request.id.substring(0, 12)}...</span>
-//                   {request.template && (
-//                     <>
-//                       <span>•</span>
-//                       <span>{request.template.category}</span>
-//                     </>
-//                   )}
-//                   <span>•</span>
-//                   <span>Created {new Date(request.createdAt).toLocaleDateString()}</span>
-//                 </div>
-//               </div>
-
-//               {/* ✅ Quick Canva Folder button */}
-//               {canvaFolderUrl ? (
-//                 <a
-//                   href={canvaFolderUrl}
-//                   target="_blank"
-//                   rel="noreferrer"
-//                   className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-black text-white font-manrope hover:bg-[#595959] transition-colors whitespace-nowrap"
-//                   style={{ fontWeight: 700 }}
-//                   title="Open Canva Folder"
-//                 >
-//                   <ExternalLink className="w-5 h-5" />
-//                   Open Canva Folder
-//                 </a>
-//               ) : (
-//                 <div
-//                   className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[#EEEEEE] text-[#595959] font-manrope whitespace-nowrap"
-//                   style={{ fontWeight: 700 }}
-//                   title="Canva folder link not set"
-//                 >
-//                   <ExternalLink className="w-5 h-5" />
-//                   Canva Folder Not Set
-//                 </div>
-//               )}
-//             </div>
-
-//             {/* Status Update Section */}
-//             <div className="bg-[#EEEEEE] rounded-lg p-6">
-//               <label className="block text-sm text-black font-manrope mb-3" style={{ fontWeight: 700 }}>
-//                 Update Status
-//               </label>
-//               <div className="flex flex-col gap-4">
-//                 <div className="flex flex-wrap gap-2">
-//                   {STATUS_ORDER.map((s) => (
-//                     <button
-//                       key={s}
-//                       type="button"
-//                       onClick={() => setLocalStatus(s)}
-//                       className={`px-4 py-2 rounded-lg text-sm font-manrope border-2 transition-all ${localStatus === s
-//                           ? 'bg-black text-white border-black'
-//                           : 'bg-white text-[#595959] border-[#EEEEEE] hover:border-black/30'
-//                         }`}
-//                       style={{ fontWeight: 700 }}
-//                     >
-//                       {STATUS_CONFIG[s].label}
-//                     </button>
-//                   ))}
-//                 </div>
-//                 <div className="flex items-center gap-3 flex-wrap">
-//                   <button
-//                     type="button"
-//                     onClick={handleStatusSave}
-//                     disabled={statusSaving || !localStatus || localStatus === request.status}
-//                     className={`inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${statusSaving || !localStatus || localStatus === request.status
-//                         ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed'
-//                         : 'bg-black text-white hover:bg-[#595959]'
-//                       } transition-colors`}
-//                     style={{ fontWeight: 700 }}
-//                   >
-//                     {statusSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-//                     Save Status
-//                   </button>
-
-//                   <div className="flex items-center gap-2 text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-//                     Current: <StatusBadge status={request.status} />
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Main Content Grid */}
-//           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-//             {/* Left Sidebar */}
-//             <div className="lg:col-span-1 space-y-6">
-//               {/* Agent Info */}
-//               {request.agent && (
-//                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                   <div className="flex items-center gap-2 mb-4">
-//                     <User className="w-5 h-5 text-[#595959]" />
-//                     <h2 className="text-lg text-black font-manrope" style={{ fontWeight: 700 }}>
-//                       Agent Information
-//                     </h2>
-//                   </div>
-//                   <div className="space-y-3">
-//                     <div>
-//                       <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
-//                         Name
-//                       </p>
-//                       <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-//                         {request.agent.name}
-//                       </p>
-//                     </div>
-//                     <div>
-//                       <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
-//                         Email
-//                       </p>
-//                       <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-//                         {request.agent.email}
-//                       </p>
-//                     </div>
-//                   </div>
-//                 </div>
-//               )}
-
-//               {/* Template Info */}
-//               {request.template && (
-//                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                   <div className="flex items-center gap-2 mb-4">
-//                     <Layers className="w-5 h-5 text-[#595959]" />
-//                     <h2 className="text-lg text-black font-manrope" style={{ fontWeight: 700 }}>
-//                       Template Used
-//                     </h2>
-//                   </div>
-
-//                   <div className="space-y-4">
-//                     <div>
-//                       <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
-//                         Title
-//                       </p>
-//                       <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-//                         {request.template.title}
-//                       </p>
-//                     </div>
-
-//                     <div>
-//                       <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
-//                         Category
-//                       </p>
-//                       <span
-//                         className="inline-block px-2 py-1 bg-[#EEEEEE] text-[#595959] rounded text-xs font-roboto"
-//                         style={{ fontWeight: 500 }}
-//                       >
-//                         {request.template.category}
-//                       </span>
-//                     </div>
-
-//                     {/* ✅ Canva Folder Link (Category-based) */}
-//                     <div>
-//                       <p className="text-xs text-[#595959] font-roboto mb-2" style={{ fontWeight: 400 }}>
-//                         Canva Folder (Category Link)
-//                       </p>
-//                       {canvaFolderUrl ? (
-//                         <a
-//                           href={canvaFolderUrl}
-//                           target="_blank"
-//                           rel="noreferrer"
-//                           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#EEEEEE] hover:bg-[#EEEEEE] transition-colors text-sm text-black font-roboto"
-//                           style={{ fontWeight: 500 }}
-//                           title="Open Canva folder"
-//                         >
-//                           <ExternalLink className="w-4 h-4 text-[#595959]" />
-//                           Open Canva Folder
-//                         </a>
-//                       ) : (
-//                         <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-//                           Not set
-//                         </p>
-//                       )}
-//                     </div>
-
-//                     {/* ✅ Template Canva URL (optional / may be null) */}
-//                     <div>
-//                       <p className="text-xs text-[#595959] font-roboto mb-2" style={{ fontWeight: 400 }}>
-//                         Template Canva URL
-//                       </p>
-//                       {templateCanvaUrl ? (
-//                         <a
-//                           href={templateCanvaUrl}
-//                           target="_blank"
-//                           rel="noreferrer"
-//                           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#EEEEEE] hover:bg-[#EEEEEE] transition-colors text-sm text-black font-roboto break-all"
-//                           style={{ fontWeight: 500 }}
-//                           title="Open template Canva link"
-//                         >
-//                           <ExternalLink className="w-4 h-4 text-[#595959]" />
-//                           Open Template Link
-//                         </a>
-//                       ) : (
-//                         <p className="text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-//                           Not set
-//                         </p>
-//                       )}
-//                     </div>
-//                   </div>
-
-//                   {/* Template Preview - Separate Card */}
-//                   {request.template?.previewUrl && (
-//                     <div className="bg-white rounded-lg mt-5 p-6 shadow-lg">
-//                       <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-//                         Template Preview
-//                       </h2>
-//                       <div className="relative w-full bg-gradient-to-br from-[#FAFAFA] to-[#EEEEEE] rounded-lg overflow-hidden border border-[#EEEEEE]">
-//                         <img
-//                           src={request.template.previewUrl}
-//                           alt={request.template.title}
-//                           className="w-full h-auto object-contain"
-//                           onError={(e) => {
-//                             e.currentTarget.src =
-//                               'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23EEEEEE" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23595959" font-size="16"%3ENo Preview Available%3C/text%3E%3C/svg%3E';
-//                           }}
-//                         />
-//                       </div>
-//                     </div>
-//                   )}
-//                 </div>
-//               )}
-
-//               {/* Deadline */}
-//               <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                 <div className="flex items-center gap-2 mb-4">
-//                   <Calendar className="w-5 h-5 text-[#595959]" />
-//                   <h2 className="text-lg text-black font-manrope" style={{ fontWeight: 700 }}>
-//                     Deadline
-//                   </h2>
-//                 </div>
-//                 <p className="text-base text-black font-roboto" style={{ fontWeight: 500 }}>
-//                   {new Date(request.deadline).toLocaleString('en-US', {
-//                     dateStyle: 'full',
-//                     timeStyle: 'short',
-//                   })}
-//                 </p>
-//               </div>
-
-//               {/* Timeline */}
-//               <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                 <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-//                   Timeline
-//                 </h2>
-//                 <div className="space-y-4">
-//                   <div>
-//                     <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
-//                       Created At
-//                     </p>
-//                     <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-//                       {new Date(request.createdAt).toLocaleString()}
-//                     </p>
-//                   </div>
-//                   <div>
-//                     <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
-//                       Last Updated
-//                     </p>
-//                     <p className="text-sm text-black font-roboto" style={{ fontWeight: 500 }}>
-//                       {new Date(request.updatedAt).toLocaleString()}
-//                     </p>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-
-//             {/* Right Content */}
-//             <div className="lg:col-span-2 space-y-6">
-//               {/* Platforms */}
-//               {request.platforms && request.platforms.length > 0 && (
-//                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                   <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-//                     Target Platforms
-//                   </h2>
-//                   <div className="flex flex-wrap gap-2">
-//                     {request.platforms.map((platform: string, idx: number) => (
-//                       <span
-//                         key={idx}
-//                         className="px-4 py-2 bg-[#EEEEEE] text-black rounded-lg text-sm font-roboto"
-//                         style={{ fontWeight: 500 }}
-//                       >
-//                         {platform}
-//                       </span>
-//                     ))}
-//                   </div>
-//                 </div>
-//               )}
-
-//               {/* Dimensions */}
-//               {request.dimensions && (
-//                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                   <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-//                     Dimensions
-//                   </h2>
-//                   <p className="text-base text-black font-roboto" style={{ fontWeight: 500 }}>
-//                     {request.dimensions}
-//                   </p>
-//                 </div>
-//               )}
-
-//               {/* Instructions */}
-//               {request.notes && (
-//                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                   <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-//                     Instructions / Notes
-//                   </h2>
-//                   <div className="p-4 bg-[#EEEEEE] rounded-lg">
-//                     <p
-//                       className="text-sm text-[#595959] font-roboto whitespace-pre-wrap"
-//                       style={{ fontWeight: 400 }}
-//                     >
-//                       {request.notes}
-//                     </p>
-//                   </div>
-//                 </div>
-//               )}
-
-//               {/* Agent Uploaded Files */}
-//               {agentFiles.length > 0 && (
-//                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                   <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-//                     Agent Files ({agentFiles.length})
-//                   </h2>
-//                   <div className="space-y-2">
-//                     {agentFiles.map((file: any) => (
-//                       <div
-//                         key={file.id}
-//                         className="flex items-center justify-between p-4 bg-[#EEEEEE] rounded-lg hover:bg-[#E0E0E0] transition-colors"
-//                       >
-//                         <div className="flex items-center gap-3 flex-1 min-w-0">
-//                           <FileText className="w-5 h-5 text-[#595959] flex-shrink-0" />
-//                           <div className="flex-1 min-w-0">
-//                             <p className="text-sm text-black font-roboto truncate" style={{ fontWeight: 500 }}>
-//                               {getFileName(file.fileUrl)}
-//                             </p>
-//                             <p className="text-xs text-[#595959] font-roboto mt-1" style={{ fontWeight: 400 }}>
-//                               Uploaded {new Date(file.createdAt).toLocaleDateString()}
-//                             </p>
-//                           </div>
-//                         </div>
-
-//                         <div className="flex items-center gap-2 flex-shrink-0">
-//                           <button
-//                             onClick={() => handleDownload(file.fileUrl, file.id)}
-//                             style={{ fontWeight: 700 }}
-//                           >
-//                             Download
-//                           </button>
-//                         </div>
-//                       </div>
-//                     ))}
-//                   </div>
-//                 </div>
-//               )}
-
-//               {/* Completed Files */}
-//               {completedFiles.length > 0 && (
-//                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                   <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-//                     Your Completed Files ({completedFiles.length})
-//                   </h2>
-//                   <div className="space-y-2">
-//                     {completedFiles.map((file: any) => (
-//                       <div
-//                         key={file.id}
-//                         className="flex items-center justify-between p-4 bg-black text-white rounded-lg hover:bg-[#595959] transition-colors"
-//                       >
-//                         <div className="flex items-center gap-3 flex-1 min-w-0">
-//                           <CheckCircle className="w-5 h-5 flex-shrink-0" />
-//                           <div className="flex-1 min-w-0">
-//                             <p className="text-sm font-roboto truncate" style={{ fontWeight: 500 }}>
-//                               {getFileName(file.fileUrl)}
-//                             </p>
-//                             <p className="text-xs opacity-70 font-roboto mt-1" style={{ fontWeight: 400 }}>
-//                               Completed {new Date(file.createdAt).toLocaleDateString()}
-//                             </p>
-//                           </div>
-//                         </div>
-//                         <div className="flex items-center gap-2 flex-shrink-0">
-//                           <button
-//                             onClick={() => handleDownload(file.fileUrl, file.id)}
-//                             style={{ fontWeight: 700 }}
-//                           >
-//                             Download
-//                           </button>
-//                         </div>
-//                       </div>
-//                     ))}
-//                   </div>
-//                 </div>
-//               )}
-
-//               {/* Upload Completed File */}
-//               <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
-//                 <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
-//                   Upload Completed File
-//                 </h2>
-
-//                 <div
-//                   onDragOver={handleDragOver}
-//                   onDragLeave={handleDragLeave}
-//                   onDrop={handleDrop}
-//                   className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${dragActive ? 'border-black bg-[#FAFAFA]' : 'border-[#EEEEEE] bg-white hover:border-black/40'
-//                     }`}
-//                 >
-//                   <input
-//                     id="completed-file-input"
-//                     type="file"
-//                     onChange={handleFileChange}
-//                     className="hidden"
-//                     accept=".pdf,.docx,.png,.jpg,.jpeg,.mp4"
-//                   />
-
-//                   <label htmlFor="completed-file-input" className="block cursor-pointer">
-//                     <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-[#EEEEEE] flex items-center justify-center">
-//                       <UploadCloud className="w-8 h-8 text-[#595959]" />
-//                     </div>
-
-//                     <p className="text-base text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
-//                       Drag and drop your completed file
-//                     </p>
-//                     <p className="text-sm text-[#595959] font-roboto mb-4" style={{ fontWeight: 400 }}>
-//                       or click to browse and select files
-//                     </p>
-
-//                     <p className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-//                       Supported formats: PDF, DOCX, PNG, JPG, MP4
-//                       <br />
-//                       Maximum file size: 50 Mb
-//                     </p>
-//                   </label>
-//                 </div>
-
-//                 {selectedFile && (
-//                   <div className="mt-4 p-4 bg-[#EEEEEE] rounded-lg">
-//                     <div className="flex items-center justify-between mb-4">
-//                       <div className="flex items-center gap-3 flex-1 min-w-0">
-//                         <FileText className="w-5 h-5 text-[#595959] flex-shrink-0" />
-//                         <div className="flex-1 min-w-0">
-//                           <p className="text-sm text-black font-roboto truncate" style={{ fontWeight: 500 }}>
-//                             {selectedFile.name}
-//                           </p>
-//                           <p className="text-xs text-[#595959] font-roboto mt-1" style={{ fontWeight: 400 }}>
-//                             {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-//                           </p>
-//                         </div>
-//                       </div>
-//                       <button
-//                         onClick={() => setSelectedFile(null)}
-//                         className="p-2 hover:bg-white rounded-lg transition-colors flex-shrink-0"
-//                       >
-//                         <X className="w-5 h-5 text-[#595959]" />
-//                       </button>
-//                     </div>
-
-//                     <button
-//                       type="button"
-//                       onClick={handleUploadFile}
-//                       disabled={uploading}
-//                       className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm font-manrope border-2 border-black ${uploading ? 'bg-[#EEEEEE] text-[#595959] cursor-not-allowed' : 'bg-black text-white hover:bg-[#595959]'
-//                         } transition-colors`}
-//                       style={{ fontWeight: 700 }}
-//                     >
-//                       {uploading && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
-//                       {uploading ? 'Uploading...' : 'Upload Completed File'}
-//                     </button>
-//                   </div>
-//                 )}
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </DashboardLayout>
-//   );
-// }

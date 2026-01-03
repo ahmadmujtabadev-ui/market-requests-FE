@@ -1,5 +1,7 @@
-import React, { JSX, useEffect, useState } from 'react';
-import { DashboardLayout } from '@/components/layouts';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import React, { JSX, useEffect, useState } from "react";
+import { DashboardLayout } from "@/components/layouts";
 import {
   ArrowLeft,
   Clock,
@@ -11,47 +13,49 @@ import {
   Layers,
   Sparkles,
   Package,
-  Loader2, // Import Loader icon
-} from 'lucide-react';
-import { useRouter } from 'next/router';
-import { useDispatch, useSelector } from 'react-redux';
-import type { AppDispatch } from '@/redux/store';
-import { fetchRequestByIdAsync } from '@/services/request/asyncThunk';
-import { selectSelectedRequest, selectRequestLoading } from '@/redux/slices/requestSlice';
-import type { RequestStatus } from '@/services/request/endpoint';
-import { LoadingOverlay } from '@/components/loaders/overlayloader';
-import { API_ENDPOINT } from '@/config';
+  Loader2,
+  ExternalLink,
+} from "lucide-react";
+import { useRouter } from "next/router";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch } from "@/redux/store";
+import { fetchRequestByIdAsync } from "@/services/request/asyncThunk";
+import { selectSelectedRequest, selectRequestLoading } from "@/redux/slices/requestSlice";
+import type { RequestStatus } from "@/services/request/endpoint";
+import { LoadingOverlay } from "@/components/loaders/overlayloader";
+import { API_ENDPOINT } from "@/config";
 
-// ... STATUS_CONFIG and StatusBadge remain same ...
-
-const STATUS_CONFIG: Record<RequestStatus, {
-  label: string;
-  bgColor: string;
-  textColor: string;
-  icon: JSX.Element;
-}> = {
+const STATUS_CONFIG: Record<
+  RequestStatus,
+  {
+    label: string;
+    bgColor: string;
+    textColor: string;
+    icon: JSX.Element;
+  }
+> = {
   new: {
-    label: 'New',
-    bgColor: 'bg-[#EEEEEE]',
-    textColor: 'text-black',
+    label: "New",
+    bgColor: "bg-[#EEEEEE]",
+    textColor: "text-black",
     icon: <Clock className="w-5 h-5" />,
   },
   progress: {
-    label: 'In Progress',
-    bgColor: 'bg-black',
-    textColor: 'text-white',
+    label: "In Progress",
+    bgColor: "bg-black",
+    textColor: "text-white",
     icon: <FileText className="w-5 h-5" />,
   },
   revision: {
-    label: 'Needs Revision',
-    bgColor: 'bg-[#595959]',
-    textColor: 'text-white',
+    label: "Needs Revision",
+    bgColor: "bg-[#595959]",
+    textColor: "text-white",
     icon: <AlertCircle className="w-5 h-5" />,
   },
   completed: {
-    label: 'Completed',
-    bgColor: 'bg-black',
-    textColor: 'text-white',
+    label: "Completed",
+    bgColor: "bg-black",
+    textColor: "text-white",
     icon: <CheckCircle className="w-5 h-5" />,
   },
 };
@@ -71,8 +75,16 @@ function StatusBadge({ status }: { status: RequestStatus }) {
 }
 
 function isNewFile(createdAt: string): boolean {
-  const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
+  const oneDayAgo = new Date().getTime() - 24 * 60 * 60 * 1000;
   return new Date(createdAt).getTime() > oneDayAgo;
+}
+
+// Optional: keep URL clean and ensure it opens in Canva editor
+function normalizeCanvaUrl(url?: string | null) {
+  if (!url) return null;
+  const trimmed = String(url).trim();
+  if (!trimmed) return null;
+  return trimmed;
 }
 
 export default function AgentRequestDetailPage() {
@@ -80,46 +92,45 @@ export default function AgentRequestDetailPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { id } = router.query;
 
-  const request = useSelector(selectSelectedRequest);
+  const request = useSelector(selectSelectedRequest) as any;
   const isLoading = useSelector(selectRequestLoading);
 
-  // Loading states for downloads
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   useEffect(() => {
-    if (id && typeof id === 'string') {
+    if (id && typeof id === "string") {
       dispatch(fetchRequestByIdAsync(id));
     }
   }, [dispatch, id]);
 
   const getFileName = (url: string) => {
     try {
-      return url.split('/').pop() || 'file';
+      return url.split("/").pop() || "file";
     } catch {
-      return 'file';
+      return "file";
     }
   };
 
   const handleDownload = async (fileUrl: string, fileId: string) => {
-    // Add file to downloading set
-    setDownloadingFiles(prev => new Set(prev).add(fileId));
+    setDownloadingFiles((prev) => new Set(prev).add(fileId));
 
     try {
-      const downloadUrl = `${API_ENDPOINT}request/download/file?fileUrl=${encodeURIComponent(fileUrl)}`;
+      const downloadUrl = `${API_ENDPOINT}request/download/file?fileUrl=${encodeURIComponent(
+        fileUrl
+      )}`;
       window.location.href = downloadUrl;
 
-      // Remove from downloading state after a short delay
       setTimeout(() => {
-        setDownloadingFiles(prev => {
+        setDownloadingFiles((prev) => {
           const newSet = new Set(prev);
           newSet.delete(fileId);
           return newSet;
         });
       }, 2000);
     } catch (error) {
-      console.error('Download failed:', error);
-      setDownloadingFiles(prev => {
+      console.error("Download failed:", error);
+      setDownloadingFiles((prev) => {
         const newSet = new Set(prev);
         newSet.delete(fileId);
         return newSet;
@@ -127,26 +138,26 @@ export default function AgentRequestDetailPage() {
     }
   };
 
-  const handleDownloadAll = async () => {
+  const handleDownloadAll = async (completedFiles: any[]) => {
     setDownloadingAll(true);
 
     try {
       for (let i = 0; i < completedFiles.length; i++) {
         const file = completedFiles[i];
-        const downloadUrl = `${API_ENDPOINT}request/download/file?fileUrl=${encodeURIComponent(file.fileUrl)}`;
+        const downloadUrl = `${API_ENDPOINT}request/download/file?fileUrl=${encodeURIComponent(
+          file.fileUrl
+        )}`;
 
-        // Open download in new window with delay
         setTimeout(() => {
-          window.open(downloadUrl, '_blank');
+          window.open(downloadUrl, "_blank");
         }, i * 1000);
       }
 
-      // Reset loading state after all files are queued
       setTimeout(() => {
         setDownloadingAll(false);
       }, completedFiles.length * 1000 + 1000);
     } catch (error) {
-      console.error('Download all failed:', error);
+      console.error("Download all failed:", error);
       setDownloadingAll(false);
     }
   };
@@ -167,14 +178,20 @@ export default function AgentRequestDetailPage() {
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
                 <Package className="w-16 h-16 text-[#595959] mx-auto mb-4" />
-                <h2 className="text-xl text-black font-manrope mb-2" style={{ fontWeight: 700 }}>
+                <h2
+                  className="text-xl text-black font-manrope mb-2"
+                  style={{ fontWeight: 700 }}
+                >
                   Request not found
                 </h2>
-                <p className="text-sm text-[#595959] font-roboto mb-6" style={{ fontWeight: 400 }}>
+                <p
+                  className="text-sm text-[#595959] font-roboto mb-6"
+                  style={{ fontWeight: 400 }}
+                >
                   This request may have been deleted or you do not have access to it
                 </p>
                 <button
-                  onClick={() => router.push('/dashboard/agent/requests')}
+                  onClick={() => router.push("/dashboard/agent/requests")}
                   className="bg-black text-white px-6 py-3 rounded-lg font-manrope hover:bg-[#595959] transition-colors"
                   style={{ fontWeight: 700 }}
                 >
@@ -188,21 +205,26 @@ export default function AgentRequestDetailPage() {
     );
   }
 
-  const agentFiles = request.files?.filter(f => f.fileType === 'agent_upload') || [];
-  const completedFiles = request.files?.filter(f => f.fileType === 'va_completed') || [];
-  const newCompletedFiles = completedFiles.filter(f => isNewFile(f.createdAt));
+  const agentFiles = request.files?.filter((f: any) => f.fileType === "agent_upload") || [];
+  const completedFiles =
+    request.files?.filter((f: any) => f.fileType === "va_completed") || [];
+  const newCompletedFiles = completedFiles.filter((f: any) => isNewFile(f.createdAt));
+
+  const canvaTemplateUrl = normalizeCanvaUrl(request.canvaTemplateUrl); // NEW: VA provided link
+  const canvaFolderUrl = request?.template?.categoryRelation?.canvaFolderUrl ?? null;
+  const templateCanvaUrl = request?.template?.canvaUrl ?? null;
 
   return (
     <DashboardLayout>
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=Roboto:wght@100;300;400;500;700;900&display=swap');
-        
+        @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=Roboto:wght@100;300;400;500;700;900&display=swap");
+
         .font-manrope {
-          font-family: 'Manrope', sans-serif;
+          font-family: "Manrope", sans-serif;
         }
-        
+
         .font-roboto {
-          font-family: 'Roboto', sans-serif;
+          font-family: "Roboto", sans-serif;
         }
 
         @keyframes shimmer {
@@ -239,7 +261,7 @@ export default function AgentRequestDetailPage() {
       <div className="flex-1 overflow-auto bg-[#EEEEEE] p-6 lg:p-8">
         <div className="w-full mx-auto">
           <button
-            onClick={() => router.push('/dashboard/agent/requests')}
+            onClick={() => router.push("/dashboard/agent/requests")}
             className="inline-flex items-center gap-2 text-[#595959] hover:text-black mb-6 font-roboto transition-colors"
             style={{ fontWeight: 500 }}
           >
@@ -254,7 +276,10 @@ export default function AgentRequestDetailPage() {
                 <h1 className="text-3xl text-black font-manrope mb-3" style={{ fontWeight: 800 }}>
                   {request.projectTitle}
                 </h1>
-                <div className="flex items-center gap-3 flex-wrap text-sm text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
+                <div
+                  className="flex items-center gap-3 flex-wrap text-sm text-[#595959] font-roboto"
+                  style={{ fontWeight: 400 }}
+                >
                   <span>Request ID: {request.id.substring(0, 12)}...</span>
                   {request.template && (
                     <>
@@ -269,16 +294,72 @@ export default function AgentRequestDetailPage() {
               <StatusBadge status={request.status} />
             </div>
 
+            {/* NEW: Canva Template button (VA completed link) */}
+            <div className="flex flex-wrap items-center gap-3">
+              {canvaTemplateUrl ? (
+                <a
+                  href={canvaTemplateUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-black text-white font-manrope hover:bg-[#595959] transition-colors"
+                  style={{ fontWeight: 700 }}
+                  title="Open Canva Template"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  Open Canva Template
+                </a>
+              ) : (
+                <div
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[#EEEEEE] text-[#595959] font-manrope"
+                  style={{ fontWeight: 700 }}
+                  title="Canva template link not provided yet"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  Canva Template Not Provided
+                </div>
+              )}
+
+              {/* Keep your existing template/category links (optional but helpful) */}
+              {canvaFolderUrl ? (
+                <a
+                  href={canvaFolderUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[#EEEEEE] bg-white text-black font-manrope hover:bg-[#FAFAFA] transition-colors"
+                  style={{ fontWeight: 700 }}
+                  title="Open Canva Folder"
+                >
+                  <ExternalLink className="w-5 h-5 text-[#595959]" />
+                  Open Canva Folder
+                </a>
+              ) : null}
+
+              {templateCanvaUrl ? (
+                <a
+                  href={templateCanvaUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[#EEEEEE] bg-white text-black font-manrope hover:bg-[#FAFAFA] transition-colors"
+                  style={{ fontWeight: 700 }}
+                  title="Open Template Canva Link"
+                >
+                  <ExternalLink className="w-5 h-5 text-[#595959]" />
+                  Open Template Link
+                </a>
+              ) : null}
+            </div>
+
             {/* New Updates Banner */}
             {newCompletedFiles.length > 0 && (
-              <div className="bg-black text-blue p-4 rounded-lg flex items-center gap-3 shimmer">
+              <div className="bg-black text-blue p-4 rounded-lg flex items-center gap-3 shimmer mt-6">
                 <Sparkles className="w-6 h-6 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-manrope mb-1" style={{ fontWeight: 700 }}>
                     New Completed Files Available!
                   </p>
                   <p className="text-xs opacity-90 font-roboto" style={{ fontWeight: 400 }}>
-                    Your VA has delivered {newCompletedFiles.length} new file{newCompletedFiles.length !== 1 ? 's' : ''} for this request
+                    Your VA has delivered {newCompletedFiles.length} new file
+                    {newCompletedFiles.length !== 1 ? "s" : ""} for this request
                   </p>
                 </div>
               </div>
@@ -287,9 +368,8 @@ export default function AgentRequestDetailPage() {
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Sidebar - Keep as is */}
+            {/* Left Sidebar */}
             <div className="lg:col-span-1 space-y-6">
-              {/* Template Info */}
               {/* Template Info */}
               {request.template && (
                 <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
@@ -312,7 +392,10 @@ export default function AgentRequestDetailPage() {
                       <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
                         Category
                       </p>
-                      <span className="inline-block px-2 py-1 bg-[#EEEEEE] text-[#595959] rounded text-xs font-roboto" style={{ fontWeight: 500 }}>
+                      <span
+                        className="inline-block px-2 py-1 bg-[#EEEEEE] text-[#595959] rounded text-xs font-roboto"
+                        style={{ fontWeight: 500 }}
+                      >
                         {request.template.category}
                       </span>
                     </div>
@@ -320,8 +403,14 @@ export default function AgentRequestDetailPage() {
                       <p className="text-xs text-[#595959] font-roboto mb-1" style={{ fontWeight: 400 }}>
                         Type
                       </p>
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-roboto ${request.template.type === 'residential' ? 'bg-black text-white' : 'bg-[#595959] text-white'
-                        }`} style={{ fontWeight: 600 }}>
+                      <span
+                        className={`inline-block px-2 py-1 rounded text-xs font-roboto ${
+                          request.template.type === "residential"
+                            ? "bg-black text-white"
+                            : "bg-[#595959] text-white"
+                        }`}
+                        style={{ fontWeight: 600 }}
+                      >
                         {request.template.type}
                       </span>
                     </div>
@@ -329,13 +418,10 @@ export default function AgentRequestDetailPage() {
                 </div>
               )}
 
-              {/* Template Preview - Separate Card */}
+              {/* Template Preview */}
               {request.template?.previewUrl && (
                 <div className="bg-white rounded-lg border-2 p-6 mt-3 shadow-lg">
-                  <h2
-                    className="text-lg text-black font-manrope mb-4"
-                    style={{ fontWeight: 700 }}
-                  >
+                  <h2 className="text-lg text-black font-manrope mb-4" style={{ fontWeight: 700 }}>
                     Template Preview
                   </h2>
                   <div className="relative w-full bg-gradient-to-br from-[#FAFAFA] to-[#EEEEEE] rounded-lg overflow-hidden border border-[#EEEEEE]">
@@ -344,13 +430,14 @@ export default function AgentRequestDetailPage() {
                       alt={request.template.title}
                       className="w-full h-auto object-contain"
                       onError={(e) => {
-                        e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23EEEEEE" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23595959" font-size="16"%3ENo Preview Available%3C/text%3E%3C/svg%3E';
+                        e.currentTarget.src =
+                          'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23EEEEEE" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23595959" font-size="16"%3ENo Preview Available%3C/text%3E%3C/svg%3E';
                       }}
                     />
                   </div>
-
                 </div>
               )}
+
               {/* Deadline */}
               <div className="bg-white rounded-lg border border-[#EEEEEE] p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -360,9 +447,9 @@ export default function AgentRequestDetailPage() {
                   </h2>
                 </div>
                 <p className="text-base text-black font-roboto" style={{ fontWeight: 500 }}>
-                  {new Date(request.deadline).toLocaleString('en-US', {
-                    dateStyle: 'full',
-                    timeStyle: 'short'
+                  {new Date(request.deadline).toLocaleString("en-US", {
+                    dateStyle: "full",
+                    timeStyle: "short",
                   })}
                 </p>
               </div>
@@ -402,7 +489,7 @@ export default function AgentRequestDetailPage() {
                     Target Platforms
                   </h2>
                   <div className="flex flex-wrap gap-2">
-                    {request.platforms.map((platform, idx) => (
+                    {request.platforms.map((platform: string, idx: number) => (
                       <span
                         key={idx}
                         className="px-4 py-2 bg-[#EEEEEE] text-black rounded-lg text-sm font-roboto"
@@ -434,7 +521,10 @@ export default function AgentRequestDetailPage() {
                     Instructions / Notes
                   </h2>
                   <div className="p-4 bg-[#EEEEEE] rounded-lg">
-                    <p className="text-sm text-[#595959] font-roboto whitespace-pre-wrap" style={{ fontWeight: 400 }}>
+                    <p
+                      className="text-sm text-[#595959] font-roboto whitespace-pre-wrap"
+                      style={{ fontWeight: 400 }}
+                    >
                       {request.notes}
                     </p>
                   </div>
@@ -448,61 +538,40 @@ export default function AgentRequestDetailPage() {
                     Your Uploaded Files ({agentFiles.length})
                   </h2>
                   <div className="space-y-2">
-                    {agentFiles.map((file) => (
+                    {agentFiles.map((file: any) => (
                       <div
                         key={file.id}
                         className="flex items-center justify-between p-4 bg-[#EEEEEE] rounded-lg hover:bg-[#E0E0E0] transition-colors"
                       >
-                        {/* Left side: file info */}
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <FileText className="w-5 h-5 text-[#595959] flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p
-                              className="text-sm text-black font-roboto truncate"
-                              style={{ fontWeight: 500 }}
-                            >
+                            <p className="text-sm text-black font-roboto truncate" style={{ fontWeight: 500 }}>
                               {getFileName(file.fileUrl)}
                             </p>
-                            <p
-                              className="text-xs text-[#595959] font-roboto mt-1"
-                              style={{ fontWeight: 400 }}
-                            >
+                            <p className="text-xs text-[#595959] font-roboto mt-1" style={{ fontWeight: 400 }}>
                               Uploaded {new Date(file.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
 
-                        {/* Right side: download button */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => handleDownload(file.fileUrl, file.id)}
-                            // disabled={isDownloading}
-                            // className={`bg-black text-white px-4 py-2 rounded-lg font-manrope hover:bg-[#595959] transition-colors flex items-center gap-2 ${isDownloading ? 'opacity-70 cursor-not-allowed' : ''
-                            //   }`}
+                            className="bg-black text-white px-4 py-2 rounded-lg font-manrope hover:bg-[#595959] transition-colors flex items-center gap-2"
                             style={{ fontWeight: 700 }}
                           >
-                            {/* {isDownloading ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Downloading...
-                              </>
-                            ) : (
-                              <>
-                                <Download className="w-4 h-4" />
-                                Download
-                              </>
-                            )} */}
+                            <Download className="w-4 h-4" />
                             Download
                           </button>
                         </div>
                       </div>
-
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* COMPLETED FILES - WITH LOADING STATE */}
+              {/* Completed Files */}
               {completedFiles.length > 0 ? (
                 <div className="bg-gradient-to-br from-black to-[#595959] rounded-lg border-2 border-black p-6 shadow-xl">
                   <div className="flex items-center justify-between mb-6">
@@ -515,10 +584,11 @@ export default function AgentRequestDetailPage() {
                           Completed Work from VA
                         </h2>
                         <p className="text-sm text-white/80 font-roboto mt-1" style={{ fontWeight: 400 }}>
-                          {completedFiles.length} file{completedFiles.length !== 1 ? 's' : ''} ready for download
+                          {completedFiles.length} file{completedFiles.length !== 1 ? "s" : ""} ready for download
                         </p>
                       </div>
                     </div>
+
                     {newCompletedFiles.length > 0 && (
                       <div className="bg-green-500 text-white px-3 py-1.5 rounded-full flex items-center gap-2">
                         <Sparkles className="w-4 h-4" />
@@ -528,16 +598,38 @@ export default function AgentRequestDetailPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* NEW: Canva Template quick action inside Completed section as well */}
+                  {canvaTemplateUrl && (
+                    <div className="mb-5">
+                      <a
+                        href={canvaTemplateUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 bg-white text-black px-6 py-3 rounded-lg font-manrope hover:bg-[#EEEEEE] transition-colors"
+                        style={{ fontWeight: 800 }}
+                        title="Open Canva Template"
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                        Open Canva Template
+                      </a>
+                      <p className="text-xs text-white/80 font-roboto mt-2" style={{ fontWeight: 400 }}>
+                        This is the editable Canva link provided by your VA for this request.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="space-y-3">
-                    {completedFiles.map((file) => {
+                    {completedFiles.map((file: any) => {
                       const isNew = isNewFile(file.createdAt);
                       const isDownloading = downloadingFiles.has(file.id);
 
                       return (
                         <div
                           key={file.id}
-                          className={`flex items-center justify-between p-4 bg-white rounded-lg hover:shadow-lg transition-all ${isNew ? 'ring-2 ring-green-500' : ''
-                            }`}
+                          className={`flex items-center justify-between p-4 bg-white rounded-lg hover:shadow-lg transition-all ${
+                            isNew ? "ring-2 ring-green-500" : ""
+                          }`}
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="bg-black rounded-lg p-2 flex-shrink-0">
@@ -549,22 +641,28 @@ export default function AgentRequestDetailPage() {
                                   {getFileName(file.fileUrl)}
                                 </p>
                                 {isNew && (
-                                  <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-manrope" style={{ fontWeight: 700 }}>
+                                  <span
+                                    className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-manrope"
+                                    style={{ fontWeight: 700 }}
+                                  >
                                     NEW
                                   </span>
                                 )}
                               </div>
                               <p className="text-xs text-[#595959] font-roboto" style={{ fontWeight: 400 }}>
-                                Completed {new Date(file.createdAt).toLocaleDateString()} at {new Date(file.createdAt).toLocaleTimeString()}
+                                Completed {new Date(file.createdAt).toLocaleDateString()} at{" "}
+                                {new Date(file.createdAt).toLocaleTimeString()}
                               </p>
                             </div>
                           </div>
+
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button
                               onClick={() => handleDownload(file.fileUrl, file.id)}
                               disabled={isDownloading}
-                              className={`bg-black text-white px-4 py-2 rounded-lg font-manrope hover:bg-[#595959] transition-colors flex items-center gap-2 ${isDownloading ? 'opacity-70 cursor-not-allowed' : ''
-                                }`}
+                              className={`bg-black text-white px-4 py-2 rounded-lg font-manrope hover:bg-[#595959] transition-colors flex items-center gap-2 ${
+                                isDownloading ? "opacity-70 cursor-not-allowed" : ""
+                              }`}
                               style={{ fontWeight: 700 }}
                             >
                               {isDownloading ? (
@@ -585,14 +683,15 @@ export default function AgentRequestDetailPage() {
                     })}
                   </div>
 
-                  {/* Download All Button with Loading */}
+                  {/* Download All */}
                   {completedFiles.length > 1 && (
                     <div className="mt-4 pt-4 border-t border-white/20">
                       <button
-                        onClick={handleDownloadAll}
+                        onClick={() => handleDownloadAll(completedFiles)}
                         disabled={downloadingAll}
-                        className={`w-full bg-white text-black px-6 py-3 rounded-lg font-manrope hover:bg-[#EEEEEE] transition-colors flex items-center justify-center gap-2 ${downloadingAll ? 'opacity-70 cursor-not-allowed' : ''
-                          }`}
+                        className={`w-full bg-white text-black px-6 py-3 rounded-lg font-manrope hover:bg-[#EEEEEE] transition-colors flex items-center justify-center gap-2 ${
+                          downloadingAll ? "opacity-70 cursor-not-allowed" : ""
+                        }`}
                         style={{ fontWeight: 700 }}
                       >
                         {downloadingAll ? (
@@ -627,6 +726,6 @@ export default function AgentRequestDetailPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout >
+    </DashboardLayout>
   );
 }

@@ -116,8 +116,14 @@ class RequestService extends HttpService {
   update = (id: string, data: UpdateRequestDto, option = {}): Promise<any> =>
     this.put(`${this.prefix}/${id}`, data, option);
 
-  updateStatus = (id: string, status: RequestStatus, option = {}): Promise<any> =>
-    this.put(`${this.prefix}/${id}/status`, { status }, option);
+// ✅ UPDATED: send status + (optional) canvaTemplateUrl in SAME API call
+updateStatus = (
+  id: string,
+  payload: { status: RequestStatus; canvaTemplateUrl?: string | null },
+  option = {}
+): Promise<any> =>
+  this.put(`${this.prefix}/${id}/status`, payload, option);
+
 
   /**
    * ✅ FIXED: Upload completed file

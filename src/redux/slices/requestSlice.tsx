@@ -191,7 +191,7 @@ export const requestSlice = createSlice({
       .addCase(updateRequestStatusAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) ?? "Failed to update request status";
-        Toast.fire({ icon: "error", title: state.error });
+        Toast.fire({ icon: "success", title: state.error });
       });
 
     // UPLOAD COMPLETED FILE

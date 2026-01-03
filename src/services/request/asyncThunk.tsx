@@ -108,25 +108,34 @@ export const updateRequestAsync = createAsyncThunk(
 /**
  * Update request status (VA/Admin only)
  */
+type UpdateRequestStatusPayload = {
+  id: string;
+  status: RequestStatus;
+  canvaTemplateUrl?: string | null;
+};
+
 export const updateRequestStatusAsync = createAsyncThunk(
   "request/updateRequestStatus",
-  async (
-    { id, status }: { id: string; status: RequestStatus },
-    { rejectWithValue }
-  ) => {
+  async ({ id, status, canvaTemplateUrl }: UpdateRequestStatusPayload, { rejectWithValue }) => {
     try {
       const token = `${ls.get("access_token", { decrypt: true })}`;
       HttpService.setToken(token);
 
-      const response = await requestService.updateStatus(id, status);
-      console.log("response at 131", response)
+      // ✅ 2) Pass object to service so API can accept both status + canvaTemplateUrl
+      // NOTE: This assumes you update requestService.updateStatus to accept (id, payload)
+      const response = await requestService.updateStatus(id, { status, canvaTemplateUrl });
 
-      if (response.message == "Request status updated") {
-        console.log("4sucess running")
-        Toast.fire({ icon: "success", title: response.message as string });
-        return response.request || response.data.request;
+      console.log("response at updateRequestStatusAsync", response);
+
+      const msg = response?.message || response?.data?.message;
+
+      if (msg === "Request status updated") {
+        Toast.fire({ icon: "success", title: msg as string });
+        return response.request || response.data?.request;
       } else {
-        Toast.fire({ icon: "error", title: response.data.message as string });
+        Toast.fire({ icon: "success", title: msg as string });
+
+        return rejectWithValue(msg || "Failed to update request status");
       }
     } catch (error: any) {
       return rejectWithValue(
