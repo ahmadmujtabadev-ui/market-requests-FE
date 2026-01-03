@@ -295,7 +295,7 @@ export default function AgentRequestDetailPage() {
             </div>
 
             {/* NEW: Canva Template button (VA completed link) */}
-            <div className="flex flex-wrap items-center gap-3">
+            {/* <div className="flex flex-wrap items-center gap-3">
               {canvaTemplateUrl ? (
                 <a
                   href={canvaTemplateUrl}
@@ -319,7 +319,6 @@ export default function AgentRequestDetailPage() {
                 </div>
               )}
 
-              {/* Keep your existing template/category links (optional but helpful) */}
               {canvaFolderUrl ? (
                 <a
                   href={canvaFolderUrl}
@@ -347,9 +346,8 @@ export default function AgentRequestDetailPage() {
                   Open Template Link
                 </a>
               ) : null}
-            </div>
+            </div> */}
 
-            {/* New Updates Banner */}
             {newCompletedFiles.length > 0 && (
               <div className="bg-black text-blue p-4 rounded-lg flex items-center gap-3 shimmer mt-6">
                 <Sparkles className="w-6 h-6 flex-shrink-0" />
