@@ -26,7 +26,9 @@ API_ENDPOINT:  "https://marketing-requests-be.vercel.app/api/",
   MAX_RETRIES: 2,
   DEBUG: false,
 };
+// http://localhost:5000/
 
+// https://api.owghub.com/
 const prod: ConfigType = {
   API_ENDPOINT:"https://api.owghub.com/api/", 
   // API_TIMEOUT: 120000,

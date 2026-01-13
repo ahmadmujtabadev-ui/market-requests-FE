@@ -126,6 +126,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       current: router.pathname === '/dashboard/admin/requests/requests',
       description: 'View All Requests',
     },
+     {
+    name: 'Help / Support',
+    href: 'https://wa.me/923461367126',  // WhatsApp link
+    icon: Users,  // You can change the icon as needed, or use a custom one.
+    current: false,  // This will not be highlighted as "current"
+    description: 'Get Support via WhatsApp',
+  },
 
     // ✅ NEW
     {
